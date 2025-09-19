@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de Álbumes (organizados por años)
+model Album {
+  id              String   @id @default(cuid())
+  year            Int      @unique
+  title           String?
+  description     String?
+  coverImageUrl   String?  @map("cover_image_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relación con subálbumes
+  subAlbums       SubAlbum[]
+  // Relación con imágenes (imágenes directas del año)
+  images          Image[]
+  
+  @@map("albums")
+}
+
+// Modelo de Subálbumes (dentro de cada año)
+model SubAlbum {
+  id              String   @id @default(cuid())
+  albumId         String   @map("album_id")
+  name            String
+  description     String?
+  coverImageUrl   String?  @map("cover_image_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relación con álbum padre
+  album           Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  // Relación con imágenes
+  images          Image[]
+  
+  @@map("sub_albums")
+}
+
+// Modelo de Imágenes
+model Image {
+  id              String   @id @default(cuid())
+  albumId         String?  @map("album_id")
+  subAlbumId      String?  @map("sub_album_id")
+  filename        String
+  originalName    String   @map("original_name")
+  fileUrl         String   @map("file_url")
+  thumbnailUrl    String?  @map("thumbnail_url")
+  fileSize        Int      @map("file_size")
+  width           Int
+  height          Int
+  mimeType        String   @map("mime_type")
+  description     String?
+  customMetadata  Json?    @map("custom_metadata")
+  takenAt         DateTime? @map("taken_at")
+  uploadedAt      DateTime @default(now()) @map("uploaded_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relación con álbum (opcional - puede estar en álbum o subálbum)
+  album           Album?    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  subAlbum        SubAlbum? @relation(fields: [subAlbumId], references: [id], onDelete: Cascade)
+  
+  @@map("images")
+}
