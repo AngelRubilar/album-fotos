@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTheme } from "@/contexts/ThemeContext";
+import ThemeSelector from "@/components/ThemeSelector";
 
 export default function UploadPage() {
+  const { currentTheme } = useTheme();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -61,22 +64,50 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen transition-all duration-500 ${
+      currentTheme === 'ocean' ? 'bg-gradient-to-br from-cyan-50 to-blue-100' :
+      currentTheme === 'sunset' ? 'bg-gradient-to-br from-orange-50 to-red-100' :
+      currentTheme === 'forest' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
+      currentTheme === 'cosmic' ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900' :
+      currentTheme === 'dark' ? 'bg-gray-900' :
+      'bg-gray-50'
+    }`}>
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className={`shadow-sm border-b transition-all duration-300 ${
+        currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' :
+        currentTheme === 'cosmic' ? 'bg-purple-800/80 border-purple-600' :
+        currentTheme === 'ocean' ? 'bg-white/80 border-cyan-200' :
+        currentTheme === 'sunset' ? 'bg-white/80 border-orange-200' :
+        currentTheme === 'forest' ? 'bg-white/80 border-green-200' :
+        'bg-white border-gray-200'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
-              <Link href="/" className="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+              <Link href="/" className={`flex items-center transition-colors duration-300 ${
+                currentTheme === 'dark' || currentTheme === 'cosmic' ? 
+                'text-gray-300 hover:text-white' : 
+                'text-gray-600 hover:text-gray-900'
+              }`}>
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Volver
               </Link>
-              <div className="h-6 w-px bg-gray-300" />
-              <h1 className="text-xl font-semibold text-gray-900">
+              <div className={`h-6 w-px transition-colors duration-300 ${
+                currentTheme === 'dark' ? 'bg-gray-600' :
+                currentTheme === 'cosmic' ? 'bg-purple-400' :
+                'bg-gray-300'
+              }`} />
+              <h1 className={`text-xl font-semibold transition-colors duration-300 ${
+                currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-white' : 'text-gray-900'
+              }`}>
                 Subir Fotos
               </h1>
+            </div>
+            {/* Selector de tema */}
+            <div className="absolute top-6 right-6">
+              <ThemeSelector />
             </div>
           </div>
         </div>

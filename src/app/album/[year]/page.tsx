@@ -1,5 +1,10 @@
+'use client';
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useTheme } from "@/contexts/ThemeContext";
+import ThemeSelector from "@/components/ThemeSelector";
 
 interface AlbumPageProps {
   params: Promise<{
@@ -59,24 +64,74 @@ const images = [
   },
 ];
 
-export default async function AlbumPage({ params }: AlbumPageProps) {
-  const { year } = await params;
+export default function AlbumPage({ params }: AlbumPageProps) {
+  const { currentTheme } = useTheme();
+  const [year, setYear] = useState<string>('');
+  
+  // Resolver el parámetro year
+  useEffect(() => {
+    params.then(({ year }) => setYear(year));
+  }, [params]);
+
+  if (!year) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${
+        currentTheme === 'ocean' ? 'bg-gradient-to-br from-cyan-50 to-blue-100' :
+        currentTheme === 'sunset' ? 'bg-gradient-to-br from-orange-50 to-red-100' :
+        currentTheme === 'forest' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
+        currentTheme === 'cosmic' ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900' :
+        currentTheme === 'dark' ? 'bg-gray-900' :
+        'bg-gray-50'
+      }`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className={`transition-colors duration-300 ${
+            currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-300' : 'text-gray-600'
+          }`}>Cargando álbum...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen transition-all duration-500 ${
+      currentTheme === 'ocean' ? 'bg-gradient-to-br from-cyan-50 to-blue-100' :
+      currentTheme === 'sunset' ? 'bg-gradient-to-br from-orange-50 to-red-100' :
+      currentTheme === 'forest' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
+      currentTheme === 'cosmic' ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900' :
+      currentTheme === 'dark' ? 'bg-gray-900' :
+      'bg-gray-50'
+    }`}>
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className={`shadow-sm border-b transition-all duration-300 ${
+        currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' :
+        currentTheme === 'cosmic' ? 'bg-purple-800/80 border-purple-600' :
+        currentTheme === 'ocean' ? 'bg-white/80 border-cyan-200' :
+        currentTheme === 'sunset' ? 'bg-white/80 border-orange-200' :
+        currentTheme === 'forest' ? 'bg-white/80 border-green-200' :
+        'bg-white border-gray-200'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
-              <Link href="/" className="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+              <Link href="/" className={`flex items-center transition-colors duration-300 ${
+                currentTheme === 'dark' || currentTheme === 'cosmic' ? 
+                'text-gray-300 hover:text-white' : 
+                'text-gray-600 hover:text-gray-900'
+              }`}>
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Volver
               </Link>
-              <div className="h-6 w-px bg-gray-300" />
-              <h1 className="text-xl font-semibold text-gray-900">
+              <div className={`h-6 w-px transition-colors duration-300 ${
+                currentTheme === 'dark' ? 'bg-gray-600' :
+                currentTheme === 'cosmic' ? 'bg-purple-400' :
+                'bg-gray-300'
+              }`} />
+              <h1 className={`text-xl font-semibold transition-colors duration-300 ${
+                currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-white' : 'text-gray-900'
+              }`}>
                 Álbum {year}
               </h1>
             </div>
@@ -86,6 +141,8 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
                   Subir Fotos
                 </button>
               </Link>
+              {/* Selector de tema */}
+              <ThemeSelector />
             </div>
           </div>
         </div>

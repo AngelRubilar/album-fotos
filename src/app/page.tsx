@@ -1,4 +1,8 @@
+'use client';
+
 import Link from "next/link";
+import { useTheme } from "@/contexts/ThemeContext";
+import ThemeSelector from "@/components/ThemeSelector";
 
 // Datos de ejemplo para los álbumes
 const albums = [
@@ -9,15 +13,33 @@ const albums = [
 ];
 
 export default function Home() {
+  const { currentTheme } = useTheme();
+  
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen transition-all duration-500 ${
+      currentTheme === 'ocean' ? 'bg-gradient-to-br from-cyan-50 to-blue-100' :
+      currentTheme === 'sunset' ? 'bg-gradient-to-br from-orange-50 to-red-100' :
+      currentTheme === 'forest' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
+      currentTheme === 'cosmic' ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900' :
+      currentTheme === 'dark' ? 'bg-gray-900' :
+      'bg-gray-50'
+    }`}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <header className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-gray-900">
+        <header className="text-center mb-12 relative">
+          {/* Selector de tema en la esquina superior derecha */}
+          <div className="absolute top-0 right-0">
+            <ThemeSelector />
+          </div>
+          
+          <h1 className={`text-4xl md:text-6xl font-bold mb-4 transition-colors duration-300 ${
+            currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-white' : 'text-gray-900'
+          }`}>
             📸 Álbum de Fotos
           </h1>
-          <p className="text-lg max-w-2xl mx-auto mb-8 text-gray-600">
+          <p className={`text-lg max-w-2xl mx-auto mb-8 transition-colors duration-300 ${
+            currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-300' : 'text-gray-600'
+          }`}>
             Explora tus recuerdos organizados por años. Cada imagen cuenta una historia única.
           </p>
           
@@ -48,13 +70,62 @@ export default function Home() {
         <main className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {albums.map((album, index) => {
-              // Gradientes diferentes para cada álbum
-              const gradients = [
-                "from-emerald-400 via-teal-500 to-cyan-600",
-                "from-violet-400 via-purple-500 to-fuchsia-600", 
-                "from-rose-400 via-pink-500 to-red-600",
-                "from-amber-400 via-orange-500 to-yellow-600"
-              ];
+              // Gradientes adaptados al tema actual
+              const getGradientForTheme = () => {
+                switch (currentTheme) {
+                  case 'light':
+                    return [
+                      "from-blue-400 via-blue-500 to-blue-600",
+                      "from-indigo-400 via-indigo-500 to-indigo-600", 
+                      "from-purple-400 via-purple-500 to-purple-600",
+                      "from-pink-400 via-pink-500 to-pink-600"
+                    ];
+                  case 'dark':
+                    return [
+                      "from-blue-500 via-blue-600 to-blue-700",
+                      "from-indigo-500 via-indigo-600 to-indigo-700", 
+                      "from-purple-500 via-purple-600 to-purple-700",
+                      "from-pink-500 via-pink-600 to-pink-700"
+                    ];
+                  case 'ocean':
+                    return [
+                      "from-cyan-400 via-cyan-500 to-cyan-600",
+                      "from-blue-400 via-blue-500 to-blue-600", 
+                      "from-teal-400 via-teal-500 to-teal-600",
+                      "from-sky-400 via-sky-500 to-sky-600"
+                    ];
+                  case 'sunset':
+                    return [
+                      "from-orange-400 via-orange-500 to-orange-600",
+                      "from-red-400 via-red-500 to-red-600", 
+                      "from-pink-400 via-pink-500 to-pink-600",
+                      "from-yellow-400 via-yellow-500 to-yellow-600"
+                    ];
+                  case 'forest':
+                    return [
+                      "from-green-400 via-green-500 to-green-600",
+                      "from-emerald-400 via-emerald-500 to-emerald-600", 
+                      "from-teal-400 via-teal-500 to-teal-600",
+                      "from-lime-400 via-lime-500 to-lime-600"
+                    ];
+                  case 'cosmic':
+                    return [
+                      "from-purple-400 via-purple-500 to-purple-600",
+                      "from-indigo-400 via-indigo-500 to-indigo-600", 
+                      "from-pink-400 via-pink-500 to-pink-600",
+                      "from-violet-400 via-violet-500 to-violet-600"
+                    ];
+                  default:
+                    return [
+                      "from-blue-400 via-blue-500 to-blue-600",
+                      "from-indigo-400 via-indigo-500 to-indigo-600", 
+                      "from-purple-400 via-purple-500 to-purple-600",
+                      "from-pink-400 via-pink-500 to-pink-600"
+                    ];
+                }
+              };
+              
+              const gradients = getGradientForTheme();
               const gradient = gradients[index % gradients.length];
               
               return (
@@ -63,7 +134,14 @@ export default function Home() {
                   href={`/album/${album.year}`}
                   className="group block"
                 >
-                  <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:rotate-1 overflow-hidden border border-gray-100">
+                  <div className={`relative rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:rotate-1 overflow-hidden border ${
+                    currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' :
+                    currentTheme === 'cosmic' ? 'bg-purple-800/80 border-purple-600' :
+                    currentTheme === 'ocean' ? 'bg-white/80 border-cyan-200' :
+                    currentTheme === 'sunset' ? 'bg-white/80 border-orange-200' :
+                    currentTheme === 'forest' ? 'bg-white/80 border-green-200' :
+                    'bg-white border-gray-100'
+                  }`}>
                     {/* Imagen de Portada con diseño moderno */}
                     <div className={`aspect-[4/3] bg-gradient-to-br ${gradient} relative overflow-hidden`}>
                       {/* Patrón de fondo */}
@@ -97,23 +175,45 @@ export default function Home() {
                     {/* Información del Álbum con nuevo diseño */}
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-2xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors duration-300">
+                        <h2 className={`text-2xl font-bold transition-colors duration-300 ${
+                          currentTheme === 'dark' || currentTheme === 'cosmic' ? 
+                          'text-white group-hover:text-gray-300' : 
+                          'text-gray-900 group-hover:text-gray-700'
+                        }`}>
                           {album.title}
                         </h2>
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <div className={`w-2 h-2 rounded-full animate-pulse ${
+                          currentTheme === 'ocean' ? 'bg-cyan-400' :
+                          currentTheme === 'sunset' ? 'bg-orange-400' :
+                          currentTheme === 'forest' ? 'bg-green-400' :
+                          currentTheme === 'cosmic' ? 'bg-purple-400' :
+                          currentTheme === 'dark' ? 'bg-blue-400' :
+                          'bg-green-400'
+                        }`}></div>
                       </div>
                       
-                      <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                      <p className={`mb-6 text-sm leading-relaxed transition-colors duration-300 ${
+                        currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-300' : 'text-gray-600'
+                      }`}>
                         Colección de {album.imageCount} momentos especiales capturados durante el año {album.year}
                       </p>
                       
                       {/* Barra de progreso visual */}
                       <div className="mb-4">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <div className={`flex justify-between text-xs mb-1 transition-colors duration-300 ${
+                          currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
                           <span>Memorias</span>
                           <span>{Math.round((album.imageCount / 250) * 100)}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className={`w-full rounded-full h-2 transition-colors duration-300 ${
+                          currentTheme === 'dark' ? 'bg-gray-700' :
+                          currentTheme === 'cosmic' ? 'bg-purple-700' :
+                          currentTheme === 'ocean' ? 'bg-cyan-200' :
+                          currentTheme === 'sunset' ? 'bg-orange-200' :
+                          currentTheme === 'forest' ? 'bg-green-200' :
+                          'bg-gray-200'
+                        }`}>
                           <div 
                             className={`h-2 rounded-full bg-gradient-to-r ${gradient} transition-all duration-1000`}
                             style={{ width: `${Math.min((album.imageCount / 250) * 100, 100)}%` }}
@@ -123,7 +223,11 @@ export default function Home() {
                       
                       {/* Botón de Acceso rediseñado */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center text-gray-600 group-hover:text-gray-800 transition-colors">
+                        <div className={`flex items-center transition-colors duration-300 ${
+                          currentTheme === 'dark' || currentTheme === 'cosmic' ? 
+                          'text-gray-300 group-hover:text-white' : 
+                          'text-gray-600 group-hover:text-gray-800'
+                        }`}>
                           <svg 
                             className="w-5 h-5 mr-2" 
                             fill="none" 
@@ -135,7 +239,11 @@ export default function Home() {
                           <span className="font-medium">Explorar</span>
                         </div>
                         <svg 
-                          className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transform group-hover:translate-x-1 transition-all duration-300" 
+                          className={`w-5 h-5 transform group-hover:translate-x-1 transition-all duration-300 ${
+                            currentTheme === 'dark' || currentTheme === 'cosmic' ? 
+                            'text-gray-400 group-hover:text-gray-200' : 
+                            'text-gray-400 group-hover:text-gray-600'
+                          }`}
                           fill="none" 
                           stroke="currentColor" 
                           viewBox="0 0 24 24"
@@ -153,7 +261,9 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="text-center mt-16">
-          <p className="text-gray-500">
+          <p className={`transition-colors duration-300 ${
+            currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-400' : 'text-gray-500'
+          }`}>
             © 2024 Álbum de Fotos - Creado con Next.js y Tailwind CSS
           </p>
         </footer>
