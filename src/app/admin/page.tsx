@@ -22,7 +22,8 @@ export default function AdminPage() {
   const [newAlbum, setNewAlbum] = useState({
     year: new Date().getFullYear(),
     title: '',
-    description: ''
+    description: '',
+    subAlbum: ''
   });
 
   // Cargar álbumes
@@ -64,7 +65,7 @@ export default function AdminPage() {
       
       if (data.success) {
         setAlbums(prev => [...prev, data.data]);
-        setNewAlbum({ year: new Date().getFullYear(), title: '', description: '' });
+        setNewAlbum({ year: new Date().getFullYear(), title: '', description: '', subAlbum: '' });
         setShowCreateForm(false);
       } else {
         alert(data.error || 'Error al crear álbum');
@@ -209,7 +210,7 @@ export default function AdminPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Crear Nuevo Álbum
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Año
@@ -231,7 +232,19 @@ export default function AdminPage() {
                       type="text"
                       value={newAlbum.title}
                       onChange={(e) => setNewAlbum(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Ej: Año 2024"
+                      placeholder="Ej: Vacaciones de Verano"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Categoría (Subálbum)
+                    </label>
+                    <input
+                      type="text"
+                      value={newAlbum.subAlbum}
+                      onChange={(e) => setNewAlbum(prev => ({ ...prev, subAlbum: e.target.value }))}
+                      placeholder="Ej: Vacaciones, Eventos, Viajes"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
@@ -289,9 +302,16 @@ export default function AdminPage() {
                     <div key={album.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {album.title}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {album.title}
+                            </h3>
+                            {(album as any).subAlbum && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                {(album as any).subAlbum}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600">
                             Año {album.year}
                           </p>

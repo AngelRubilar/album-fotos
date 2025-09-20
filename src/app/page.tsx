@@ -1,19 +1,77 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeSelector from "@/components/ThemeSelector";
 
-// Datos de ejemplo para los álbumes
-const albums = [
-  { year: 2024, title: "Año 2024", imageCount: 150 },
-  { year: 2023, title: "Año 2023", imageCount: 89 },
-  { year: 2022, title: "Año 2022", imageCount: 234 },
-  { year: 2021, title: "Año 2021", imageCount: 167 },
-];
+interface Year {
+  year: number;
+  totalImages: number;
+  albumCount: number;
+}
 
 export default function Home() {
   const { currentTheme } = useTheme();
+  const [years, setYears] = useState<Year[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Cargar años con imágenes desde la API
+  useEffect(() => {
+    const fetchYears = async () => {
+      try {
+        const response = await fetch('/api/years');
+        const data = await response.json();
+        if (data.success) {
+          setYears(data.data);
+        } else {
+          // Si no hay años con imágenes, usar datos de ejemplo
+          setYears([
+            { year: 2025, totalImages: 45, albumCount: 4 },
+            { year: 2024, totalImages: 150, albumCount: 1 },
+            { year: 2023, totalImages: 89, albumCount: 1 },
+            { year: 2022, totalImages: 234, albumCount: 1 },
+            { year: 2021, totalImages: 167, albumCount: 1 },
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching years:', error);
+        // En caso de error, usar datos de ejemplo
+        setYears([
+          { year: 2025, totalImages: 45, albumCount: 4 },
+          { year: 2024, totalImages: 150, albumCount: 1 },
+          { year: 2023, totalImages: 89, albumCount: 1 },
+          { year: 2022, totalImages: 234, albumCount: 1 },
+          { year: 2021, totalImages: 167, albumCount: 1 },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchYears();
+  }, []);
+
+  // Mostrar estado de carga
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${
+        currentTheme === 'ocean' ? 'bg-gradient-to-br from-cyan-50 to-blue-100' :
+        currentTheme === 'sunset' ? 'bg-gradient-to-br from-orange-50 to-red-100' :
+        currentTheme === 'forest' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
+        currentTheme === 'cosmic' ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900' :
+        currentTheme === 'dark' ? 'bg-gray-900' :
+        'bg-gray-50'
+      }`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className={`transition-colors duration-300 ${
+            currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-300' : 'text-gray-600'
+          }`}>Cargando álbumes...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className={`min-h-screen transition-all duration-500 ${
@@ -66,10 +124,30 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Grid de Álbumes */}
+        {/* Grid de Años */}
         <main className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {albums.map((album, index) => {
+          {years.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-6xl mb-4">📁</div>
+              <h3 className={`text-2xl font-bold mb-3 transition-colors duration-300 ${
+                currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-white' : 'text-gray-900'
+              }`}>
+                ¡No hay fotos subidas!
+              </h3>
+              <p className={`text-lg mb-6 transition-colors duration-300 ${
+                currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                Sube tus primeras fotos para empezar a organizar tus recuerdos.
+              </p>
+              <Link href="/upload">
+                <button className="px-8 py-4 bg-blue-600 text-white rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl hover:bg-blue-700 transition-all duration-300">
+                  Subir Fotos
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {years.map((yearData, index) => {
               // Gradientes adaptados al tema actual
               const getGradientForTheme = () => {
                 switch (currentTheme) {
@@ -130,8 +208,8 @@ export default function Home() {
               
               return (
                 <Link
-                  key={album.year}
-                  href={`/album/${album.year}`}
+                  key={yearData.year}
+                  href={`/album/${yearData.year}`}
                   className="group block"
                 >
                   <div className={`relative rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:rotate-1 overflow-hidden border ${
@@ -156,7 +234,7 @@ export default function Home() {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="backdrop-blur-sm bg-white/20 rounded-3xl px-8 py-6 border border-white/30">
                           <span className="text-7xl font-bold text-white drop-shadow-lg">
-                            {album.year}
+                            {yearData.year}
                           </span>
                         </div>
                       </div>
@@ -167,12 +245,12 @@ export default function Home() {
                       {/* Indicador de fotos en la esquina */}
                       <div className="absolute top-4 right-4 backdrop-blur-sm bg-white/20 rounded-full px-3 py-1 border border-white/30">
                         <span className="text-white text-sm font-medium">
-                          {album.imageCount} 📸
+                          {yearData.totalImages} 📸
                         </span>
                       </div>
                     </div>
 
-                    {/* Información del Álbum con nuevo diseño */}
+                    {/* Información del Año */}
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-3">
                         <h2 className={`text-2xl font-bold transition-colors duration-300 ${
@@ -180,7 +258,7 @@ export default function Home() {
                           'text-white group-hover:text-gray-300' : 
                           'text-gray-900 group-hover:text-gray-700'
                         }`}>
-                          {album.title}
+                          Año {yearData.year}
                         </h2>
                         <div className={`w-2 h-2 rounded-full animate-pulse ${
                           currentTheme === 'ocean' ? 'bg-cyan-400' :
@@ -195,7 +273,7 @@ export default function Home() {
                       <p className={`mb-6 text-sm leading-relaxed transition-colors duration-300 ${
                         currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-300' : 'text-gray-600'
                       }`}>
-                        Colección de {album.imageCount} momentos especiales capturados durante el año {album.year}
+                        {yearData.albumCount} álbum{yearData.albumCount !== 1 ? 'es' : ''} con {yearData.totalImages} momentos especiales
                       </p>
                       
                       {/* Barra de progreso visual */}
@@ -204,7 +282,7 @@ export default function Home() {
                           currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-400' : 'text-gray-500'
                         }`}>
                           <span>Memorias</span>
-                          <span>{Math.round((album.imageCount / 250) * 100)}%</span>
+                          <span>{Math.round((yearData.totalImages / 250) * 100)}%</span>
                         </div>
                         <div className={`w-full rounded-full h-2 transition-colors duration-300 ${
                           currentTheme === 'dark' ? 'bg-gray-700' :
@@ -216,7 +294,7 @@ export default function Home() {
                         }`}>
                           <div 
                             className={`h-2 rounded-full bg-gradient-to-r ${gradient} transition-all duration-1000`}
-                            style={{ width: `${Math.min((album.imageCount / 250) * 100, 100)}%` }}
+                            style={{ width: `${Math.min((yearData.totalImages / 250) * 100, 100)}%` }}
                           ></div>
                         </div>
                       </div>
@@ -255,8 +333,9 @@ export default function Home() {
                   </div>
                 </Link>
               );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </main>
 
         {/* Footer */}

@@ -1,16 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeSelector from "@/components/ThemeSelector";
 
 export default function UploadPage() {
   const { currentTheme } = useTheme();
+  const searchParams = useSearchParams();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [albums, setAlbums] = useState<any[]>([]);
+  const [selectedAlbum, setSelectedAlbum] = useState<string>('');
+
+  // Cargar álbumes disponibles
+  useEffect(() => {
+    const fetchAlbums = async () => {
+      try {
+        const response = await fetch('/api/albums');
+        const data = await response.json();
+        if (data.success) {
+          setAlbums(data.data);
+          
+          // Si hay un álbum en la URL, seleccionarlo automáticamente
+          const albumFromUrl = searchParams.get('album');
+          if (albumFromUrl) {
+            setSelectedAlbum(albumFromUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching albums:', error);
+      }
+    };
+    fetchAlbums();
+  }, [searchParams]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -48,19 +74,54 @@ export default function UploadPage() {
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
+    if (!selectedAlbum) {
+      alert('Por favor selecciona un álbum');
+      return;
+    }
     
     setUploading(true);
     setUploadProgress(0);
     
-    // Simular subida
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setUploadProgress(i);
+    try {
+      const formData = new FormData();
+      
+      // Agregar archivos al FormData
+      selectedFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+      
+      // Agregar ID del álbum seleccionado
+      formData.append('albumId', selectedAlbum);
+      
+      // Simular progreso
+      for (let i = 0; i <= 90; i += 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        setUploadProgress(i);
+      }
+      
+      // Subir archivos
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setUploadProgress(100);
+        alert(`¡Éxito! Se subieron ${data.data.length} imagen(es).`);
+        setSelectedFiles([]);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+      
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      alert('Error al subir las imágenes');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
     }
-    
-    setUploading(false);
-    setSelectedFiles([]);
-    setUploadProgress(0);
   };
 
   return (
@@ -138,6 +199,26 @@ export default function UploadPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               Subir Nuevas Fotos
             </h2>
+            
+            {/* Selector de Álbum */}
+            <div className="mb-6">
+              <label htmlFor="album-select" className="block text-sm font-medium text-gray-700 mb-2">
+                Seleccionar Álbum
+              </label>
+              <select
+                id="album-select"
+                value={selectedAlbum}
+                onChange={(e) => setSelectedAlbum(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">-- Selecciona un álbum --</option>
+                {albums.map((album) => (
+                  <option key={album.id} value={album.id}>
+                    {album.year} - {album.title} {album.subAlbum ? `(${album.subAlbum})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
             
             {/* Drag & Drop Area */}
             <div
@@ -231,36 +312,16 @@ export default function UploadPage() {
           )}
 
           {/* Configuración de Álbum */}
-          {selectedFiles.length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Configuración del Álbum
+          {/* Información del Álbum Seleccionado */}
+          {selectedFiles.length > 0 && selectedAlbum && (
+            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                📁 Álbum de Destino
               </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Año del Álbum
-                  </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="2024">2024</option>
-                    <option value="2023">2023</option>
-                    <option value="2022">2022</option>
-                    <option value="2021">2021</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Subálbum (opcional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Vacaciones, Cumpleaños..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
+              <p className="text-blue-800">
+                {albums.find(album => album.id === selectedAlbum)?.year} - {albums.find(album => album.id === selectedAlbum)?.title}
+                {albums.find(album => album.id === selectedAlbum)?.subAlbum && ` (${albums.find(album => album.id === selectedAlbum)?.subAlbum})`}
+              </p>
             </div>
           )}
 

@@ -3,11 +3,12 @@
 
 generator client {
   provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // Modelo de Álbumes (organizados por años)
@@ -16,58 +17,34 @@ model Album {
   year            Int      @unique
   title           String?
   description     String?
-  coverImageUrl   String?  @map("cover_image_url")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  coverImageUrl   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   
-  // Relación con subálbumes
-  subAlbums       SubAlbum[]
-  // Relación con imágenes (imágenes directas del año)
+  // Relación con imágenes
   images          Image[]
   
   @@map("albums")
 }
 
-// Modelo de Subálbumes (dentro de cada año)
-model SubAlbum {
-  id              String   @id @default(cuid())
-  albumId         String   @map("album_id")
-  name            String
-  description     String?
-  coverImageUrl   String?  @map("cover_image_url")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  
-  // Relación con álbum padre
-  album           Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
-  // Relación con imágenes
-  images          Image[]
-  
-  @@map("sub_albums")
-}
-
 // Modelo de Imágenes
 model Image {
   id              String   @id @default(cuid())
-  albumId         String?  @map("album_id")
-  subAlbumId      String?  @map("sub_album_id")
+  albumId         String?
   filename        String
-  originalName    String   @map("original_name")
-  fileUrl         String   @map("file_url")
-  thumbnailUrl    String?  @map("thumbnail_url")
-  fileSize        Int      @map("file_size")
+  originalName    String
+  fileUrl         String
+  thumbnailUrl    String?
+  fileSize        Int
   width           Int
   height          Int
-  mimeType        String   @map("mime_type")
+  mimeType        String
   description     String?
-  customMetadata  Json?    @map("custom_metadata")
-  takenAt         DateTime? @map("taken_at")
-  uploadedAt      DateTime @default(now()) @map("uploaded_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  uploadedAt      DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   
-  // Relación con álbum (opcional - puede estar en álbum o subálbum)
-  album           Album?    @relation(fields: [albumId], references: [id], onDelete: Cascade)
-  subAlbum        SubAlbum? @relation(fields: [subAlbumId], references: [id], onDelete: Cascade)
+  // Relación con álbum
+  album           Album?   @relation(fields: [albumId], references: [id], onDelete: Cascade)
   
   @@map("images")
 }

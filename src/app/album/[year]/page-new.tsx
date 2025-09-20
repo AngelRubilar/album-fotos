@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeSelector from "@/components/ThemeSelector";
-import AlbumPreview from "@/components/AlbumPreview";
 
 interface AlbumPageProps {
   params: Promise<{ year: string }>;
@@ -38,33 +37,6 @@ export default function AlbumPage({ params }: AlbumPageProps) {
       }
     } catch (error) {
       console.error('Error loading album images:', error);
-    }
-  };
-
-  // Función para eliminar una imagen
-  const deleteImage = async (imageId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta imagen?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/images/${imageId}`, {
-        method: 'DELETE'
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        // Recargar las imágenes del álbum
-        if (selectedAlbum) {
-          await loadAlbumImages(selectedAlbum);
-        }
-      } else {
-        alert('Error al eliminar la imagen: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error deleting image:', error);
-      alert('Error al eliminar la imagen');
     }
   };
 
@@ -212,7 +184,7 @@ export default function AlbumPage({ params }: AlbumPageProps) {
                 <div
                   key={album.id}
                   onClick={() => loadAlbumImages(album.id)}
-                  className={`cursor-pointer rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group ${
+                  className={`cursor-pointer rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden ${
                     currentTheme === 'dark' ? 'bg-gray-800' :
                     currentTheme === 'cosmic' ? 'bg-purple-800/80' :
                     currentTheme === 'ocean' ? 'bg-white/80' :
@@ -221,17 +193,7 @@ export default function AlbumPage({ params }: AlbumPageProps) {
                     'bg-white'
                   }`}
                 >
-                  {/* Previsualización de imágenes */}
-                  <div className="p-2">
-                    <AlbumPreview 
-                      albumId={album.id} 
-                      imageCount={album.imageCount}
-                      className="group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  
-                  {/* Información del álbum */}
-                  <div className="p-4">
+                  <div className="p-6">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className={`text-lg font-bold transition-colors duration-300 ${
                         currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-white' : 'text-gray-900'
@@ -251,39 +213,19 @@ export default function AlbumPage({ params }: AlbumPageProps) {
                         </span>
                       )}
                     </div>
-                    
-                    {album.description && (
-                      <p className={`text-sm mb-3 transition-colors duration-300 ${
-                        currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-300' : 'text-gray-600'
-                      }`}>
-                        {album.description}
-                      </p>
-                    )}
-                    
-                    <div className={`flex items-center justify-between text-sm transition-colors duration-300 mb-4 ${
+                    <p className={`text-sm mb-4 transition-colors duration-300 ${
+                      currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      {album.description}
+                    </p>
+                    <div className={`flex items-center justify-between text-sm transition-colors duration-300 ${
                       currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-400' : 'text-gray-500'
                     }`}>
-                      <span className="flex items-center gap-1">
-                        📸 {album.imageCount} fotos
-                      </span>
-                      <span className="font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <span>{album.imageCount} fotos</span>
+                      <span className="font-medium">
                         Ver álbum →
                       </span>
                     </div>
-                    
-                    {/* Botón de subir fotos */}
-                    <Link href={`/upload?album=${album.id}`} onClick={(e) => e.stopPropagation()}>
-                      <button className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                        currentTheme === 'ocean' ? 'bg-cyan-600 hover:bg-cyan-700 text-white' :
-                        currentTheme === 'sunset' ? 'bg-orange-600 hover:bg-orange-700 text-white' :
-                        currentTheme === 'forest' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                        currentTheme === 'cosmic' ? 'bg-purple-600 hover:bg-purple-700 text-white' :
-                        currentTheme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
-                        'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}>
-                        📸 Subir Fotos
-                      </button>
-                    </Link>
                   </div>
                 </div>
               ))}
@@ -319,17 +261,6 @@ export default function AlbumPage({ params }: AlbumPageProps) {
                         className="object-cover transition-transform duration-300 group-hover:scale-110"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                       />
-                      
-                      {/* Botón de eliminar */}
-                      <button
-                        onClick={() => deleteImage(image.id)}
-                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        title="Eliminar imagen"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
                     </div>
                     <div className="p-4">
                       <h4 className={`font-semibold mb-2 transition-colors duration-300 ${
@@ -361,7 +292,7 @@ export default function AlbumPage({ params }: AlbumPageProps) {
                 }`}>
                   Sube algunas fotos para empezar a llenar este álbum.
                 </p>
-                <Link href={`/upload?album=${selectedAlbum}`} className="mt-6 inline-block">
+                <Link href="/upload" className="mt-6 inline-block">
                   <button className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
                     currentTheme === 'ocean' ? 'bg-cyan-600 hover:bg-cyan-700 text-white' :
                     currentTheme === 'sunset' ? 'bg-orange-600 hover:bg-orange-700 text-white' :

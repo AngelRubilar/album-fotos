@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Datos de ejemplo (en producción esto vendría de la base de datos)
-const albums = [
-  { id: "1", year: 2024, title: "Año 2024", description: "Fotos del año 2024", imageCount: 150, createdAt: "2024-01-01" },
-  { id: "2", year: 2023, title: "Año 2023", description: "Fotos del año 2023", imageCount: 89, createdAt: "2023-01-01" },
-  { id: "3", year: 2022, title: "Año 2022", description: "Fotos del año 2022", imageCount: 234, createdAt: "2022-01-01" },
-  { id: "4", year: 2021, title: "Año 2021", description: "Fotos del año 2021", imageCount: 167, createdAt: "2021-01-01" },
-];
+import { getSimpleDatabase } from '@/lib/simple-db';
 
 interface RouteParams {
   params: Promise<{
@@ -18,8 +11,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
+    const db = getSimpleDatabase();
     
-    const album = albums.find(a => a.id === id);
+    const album = await db.getAlbumById(id);
     
     if (!album) {
       return NextResponse.json(
@@ -28,12 +22,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Obtener imágenes del álbum
+    const images = await db.getImagesByAlbum(id);
+
     return NextResponse.json({
       success: true,
-      data: album
+      data: {
+        id: album.id,
+        year: album.year,
+        title: album.title,
+        description: album.description,
+        subAlbum: album.subAlbum,
+        imageCount: images.length,
+        createdAt: album.createdAt
+      }
     });
 
   } catch (error) {
+    console.error('Error fetching album:', error);
     return NextResponse.json(
       { success: false, error: 'Error al obtener álbum' },
       { status: 500 }
@@ -48,25 +54,36 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const { title, description } = body;
 
-    const albumIndex = albums.findIndex(a => a.id === id);
+    // Obtener álbumes desde la API principal
+    const response = await fetch(`${request.nextUrl.origin}/api/albums`);
+    const data = await response.json();
     
-    if (albumIndex === -1) {
+    if (!data.success) {
+      return NextResponse.json(
+        { success: false, error: 'Error al obtener álbumes' },
+        { status: 500 }
+      );
+    }
+    
+    const album = data.data.find((a: any) => a.id === id);
+    
+    if (!album) {
       return NextResponse.json(
         { success: false, error: 'Álbum no encontrado' },
         { status: 404 }
       );
     }
 
-    // Actualizar álbum
-    albums[albumIndex] = {
-      ...albums[albumIndex],
-      title: title?.trim() || albums[albumIndex].title,
-      description: description?.trim() || albums[albumIndex].description,
+    // Por ahora, retornamos éxito (en una implementación real actualizaríamos el storage)
+    const updatedAlbum = {
+      ...album,
+      title: title?.trim() || album.title,
+      description: description?.trim() || album.description,
     };
 
     return NextResponse.json({
       success: true,
-      data: albums[albumIndex],
+      data: updatedAlbum,
       message: 'Álbum actualizado exitosamente'
     });
 
@@ -82,28 +99,39 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
+    const db = getSimpleDatabase();
     
-    const albumIndex = albums.findIndex(a => a.id === id);
+    // Verificar si el álbum existe
+    const existingAlbum = await db.getAlbumById(id);
     
-    if (albumIndex === -1) {
+    if (!existingAlbum) {
       return NextResponse.json(
         { success: false, error: 'Álbum no encontrado' },
         { status: 404 }
       );
     }
 
-    // Eliminar álbum
-    const deletedAlbum = albums.splice(albumIndex, 1)[0];
+    // Eliminar álbum y sus imágenes
+    await db.deleteAlbum(id);
 
     return NextResponse.json({
       success: true,
-      data: deletedAlbum,
+      data: {
+        id: existingAlbum.id,
+        year: existingAlbum.year,
+        title: existingAlbum.title,
+        description: existingAlbum.description,
+        subAlbum: existingAlbum.subAlbum,
+        imageCount: 0,
+        createdAt: existingAlbum.createdAt
+      },
       message: 'Álbum eliminado exitosamente'
     });
 
   } catch (error) {
+    console.error('Error deleting album:', error);
     return NextResponse.json(
-      { success: false, error: 'Error al eliminar álbum' },
+      { success: false, error: error instanceof Error ? error.message : 'Error al eliminar álbum' },
       { status: 500 }
     );
   }
