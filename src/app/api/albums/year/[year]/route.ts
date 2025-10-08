@@ -26,6 +26,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       success: true,
       data: albums
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
+      }
     });
 
   } catch (error) {
@@ -36,3 +40,5 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+export const revalidate = 60;
