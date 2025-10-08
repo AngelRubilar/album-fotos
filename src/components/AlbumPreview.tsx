@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 
 interface AlbumPreviewProps {
   albumId: string;
@@ -9,24 +9,38 @@ interface AlbumPreviewProps {
   className?: string;
 }
 
-export default function AlbumPreview({ albumId, imageCount, className = '' }: AlbumPreviewProps) {
+const AlbumPreview = memo(function AlbumPreview({ albumId, imageCount, className = '' }: AlbumPreviewProps) {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchPreviewImages = async () => {
       try {
         const response = await fetch(`/api/albums/${albumId}/images`);
         const data = await response.json();
-        
+
+        if (!isMounted) return;
+
         if (data.success && data.data.images.length > 0) {
           // Tomar las primeras 4 imágenes para la previsualización
+          // Priorizar thumbnails WebP optimizados para mejor rendimiento
           const images = data.data.images.slice(0, 4).map((img: any) => {
-            // Usar fileUrl si es una imagen real, sino usar un placeholder
-            if (img.fileUrl && !img.fileUrl.includes('placeholder')) {
+            // Prioridad 1: Thumbnail WebP (optimizado, 400x400, ~10-20KB)
+            if (img.thumbnailUrl && img.thumbnailUrl.includes('.webp')) {
+              return img.thumbnailUrl;
+            }
+            // Prioridad 2: Cualquier thumbnail válido
+            else if (img.thumbnailUrl && !img.thumbnailUrl.includes('placeholder')) {
+              return img.thumbnailUrl;
+            }
+            // Prioridad 3: Imagen original (más pesada)
+            else if (img.fileUrl && !img.fileUrl.includes('placeholder')) {
               return img.fileUrl;
-            } else {
-              // Crear un placeholder colorido basado en el ID del álbum
+            }
+            // Fallback: Placeholder colorido
+            else {
               const colors = ['bg-gradient-to-br from-blue-400 to-blue-600', 'bg-gradient-to-br from-green-400 to-green-600', 'bg-gradient-to-br from-purple-400 to-purple-600', 'bg-gradient-to-br from-pink-400 to-pink-600', 'bg-gradient-to-br from-orange-400 to-orange-600'];
               const colorIndex = Math.abs(img.albumId.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % colors.length;
               return colors[colorIndex];
@@ -37,7 +51,9 @@ export default function AlbumPreview({ albumId, imageCount, className = '' }: Al
       } catch (error) {
         console.error('Error fetching preview images:', error);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -46,6 +62,11 @@ export default function AlbumPreview({ albumId, imageCount, className = '' }: Al
     } else {
       setLoading(false);
     }
+
+    // Cleanup para evitar memory leaks
+    return () => {
+      isMounted = false;
+    };
   }, [albumId, imageCount]);
 
   if (loading) {
@@ -234,4 +255,6 @@ export default function AlbumPreview({ albumId, imageCount, className = '' }: Al
       </div>
     </div>
   );
-}
+});
+
+export default AlbumPreview;

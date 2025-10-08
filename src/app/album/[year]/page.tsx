@@ -3,9 +3,18 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeSelector from "@/components/ThemeSelector";
 import AlbumPreview from "@/components/AlbumPreview";
+
+// Lazy load del componente ImageGallery (solo se carga cuando se abre)
+const ImageGallery = dynamic(() => import("@/components/ImageGallery"), {
+  loading: () => <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+  </div>,
+  ssr: false
+});
 
 interface AlbumPageProps {
   params: Promise<{ year: string }>;
@@ -19,6 +28,10 @@ export default function AlbumPage({ params }: AlbumPageProps) {
   const [subAlbums, setSubAlbums] = useState<any[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [selectedAlbumData, setSelectedAlbumData] = useState<any>(null);
+  
+  // Estados para la galería de imágenes
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
   
   // Resolver el parámetro year
   useEffect(() => {
@@ -66,6 +79,17 @@ export default function AlbumPage({ params }: AlbumPageProps) {
       console.error('Error deleting image:', error);
       alert('Error al eliminar la imagen');
     }
+  };
+
+  // Función para abrir la galería
+  const openGallery = (imageIndex: number) => {
+    setGalleryIndex(imageIndex);
+    setGalleryOpen(true);
+  };
+
+  // Función para cerrar la galería
+  const closeGallery = () => {
+    setGalleryOpen(false);
   };
 
   // Cargar álbumes cuando cambie el año
@@ -305,11 +329,12 @@ export default function AlbumPage({ params }: AlbumPageProps) {
                 {images.map((image, index) => (
                   <div
                     key={image.id}
-                    className={`group relative rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ${
+                    className={`group relative rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer ${
                       currentTheme === 'dark' ? 'bg-gray-800' :
                       currentTheme === 'cosmic' ? 'bg-purple-800/80' :
                       'bg-white'
                     }`}
+                    onClick={() => openGallery(index)}
                   >
                     <div className="aspect-square relative">
                       <Image
@@ -320,9 +345,21 @@ export default function AlbumPage({ params }: AlbumPageProps) {
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                       />
                       
+                      {/* Overlay de zoom */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                          </svg>
+                        </div>
+                      </div>
+                      
                       {/* Botón de eliminar */}
                       <button
-                        onClick={() => deleteImage(image.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteImage(image.id);
+                        }}
                         className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                         title="Eliminar imagen"
                       >
@@ -344,6 +381,10 @@ export default function AlbumPage({ params }: AlbumPageProps) {
                           {image.description}
                         </p>
                       )}
+                      {/* Indicador de clic para ver */}
+                      <div className="mt-2 text-xs text-gray-500 group-hover:text-blue-500 transition-colors duration-300">
+                        Haz clic para ver en tamaño completo
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -407,6 +448,15 @@ export default function AlbumPage({ params }: AlbumPageProps) {
           </div>
         )}
       </main>
+
+      {/* Galería de imágenes modal */}
+      <ImageGallery
+        images={images}
+        currentIndex={galleryIndex}
+        isOpen={galleryOpen}
+        onClose={closeGallery}
+        onImageChange={setGalleryIndex}
+      />
     </div>
   );
 }

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeSelector from "@/components/ThemeSelector";
 
-export default function UploadPage() {
+function UploadContent() {
   const { currentTheme } = useTheme();
   const searchParams = useSearchParams();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -378,5 +378,20 @@ export default function UploadPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function UploadPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <UploadContent />
+    </Suspense>
   );
 }

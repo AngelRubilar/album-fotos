@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeSelector from "@/components/ThemeSelector";
@@ -15,6 +15,61 @@ export default function Home() {
   const { currentTheme } = useTheme();
   const [years, setYears] = useState<Year[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Gradientes adaptados al tema actual - Memoizado para evitar cálculos en cada render
+  const gradients = useMemo(() => {
+    switch (currentTheme) {
+      case 'light':
+        return [
+          "from-blue-400 via-blue-500 to-blue-600",
+          "from-indigo-400 via-indigo-500 to-indigo-600",
+          "from-purple-400 via-purple-500 to-purple-600",
+          "from-pink-400 via-pink-500 to-pink-600"
+        ];
+      case 'dark':
+        return [
+          "from-blue-500 via-blue-600 to-blue-700",
+          "from-indigo-500 via-indigo-600 to-indigo-700",
+          "from-purple-500 via-purple-600 to-purple-700",
+          "from-pink-500 via-pink-600 to-pink-700"
+        ];
+      case 'ocean':
+        return [
+          "from-cyan-400 via-cyan-500 to-cyan-600",
+          "from-blue-400 via-blue-500 to-blue-600",
+          "from-teal-400 via-teal-500 to-teal-600",
+          "from-sky-400 via-sky-500 to-sky-600"
+        ];
+      case 'sunset':
+        return [
+          "from-orange-400 via-orange-500 to-orange-600",
+          "from-red-400 via-red-500 to-red-600",
+          "from-pink-400 via-pink-500 to-pink-600",
+          "from-yellow-400 via-yellow-500 to-yellow-600"
+        ];
+      case 'forest':
+        return [
+          "from-green-400 via-green-500 to-green-600",
+          "from-emerald-400 via-emerald-500 to-emerald-600",
+          "from-teal-400 via-teal-500 to-teal-600",
+          "from-lime-400 via-lime-500 to-lime-600"
+        ];
+      case 'cosmic':
+        return [
+          "from-purple-400 via-purple-500 to-purple-600",
+          "from-indigo-400 via-indigo-500 to-indigo-600",
+          "from-pink-400 via-pink-500 to-pink-600",
+          "from-violet-400 via-violet-500 to-violet-600"
+        ];
+      default:
+        return [
+          "from-blue-400 via-blue-500 to-blue-600",
+          "from-indigo-400 via-indigo-500 to-indigo-600",
+          "from-purple-400 via-purple-500 to-purple-600",
+          "from-pink-400 via-pink-500 to-pink-600"
+        ];
+    }
+  }, [currentTheme]);
 
   // Cargar años con imágenes desde la API
   useEffect(() => {
@@ -148,62 +203,6 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {years.map((yearData, index) => {
-              // Gradientes adaptados al tema actual
-              const getGradientForTheme = () => {
-                switch (currentTheme) {
-                  case 'light':
-                    return [
-                      "from-blue-400 via-blue-500 to-blue-600",
-                      "from-indigo-400 via-indigo-500 to-indigo-600", 
-                      "from-purple-400 via-purple-500 to-purple-600",
-                      "from-pink-400 via-pink-500 to-pink-600"
-                    ];
-                  case 'dark':
-                    return [
-                      "from-blue-500 via-blue-600 to-blue-700",
-                      "from-indigo-500 via-indigo-600 to-indigo-700", 
-                      "from-purple-500 via-purple-600 to-purple-700",
-                      "from-pink-500 via-pink-600 to-pink-700"
-                    ];
-                  case 'ocean':
-                    return [
-                      "from-cyan-400 via-cyan-500 to-cyan-600",
-                      "from-blue-400 via-blue-500 to-blue-600", 
-                      "from-teal-400 via-teal-500 to-teal-600",
-                      "from-sky-400 via-sky-500 to-sky-600"
-                    ];
-                  case 'sunset':
-                    return [
-                      "from-orange-400 via-orange-500 to-orange-600",
-                      "from-red-400 via-red-500 to-red-600", 
-                      "from-pink-400 via-pink-500 to-pink-600",
-                      "from-yellow-400 via-yellow-500 to-yellow-600"
-                    ];
-                  case 'forest':
-                    return [
-                      "from-green-400 via-green-500 to-green-600",
-                      "from-emerald-400 via-emerald-500 to-emerald-600", 
-                      "from-teal-400 via-teal-500 to-teal-600",
-                      "from-lime-400 via-lime-500 to-lime-600"
-                    ];
-                  case 'cosmic':
-                    return [
-                      "from-purple-400 via-purple-500 to-purple-600",
-                      "from-indigo-400 via-indigo-500 to-indigo-600", 
-                      "from-pink-400 via-pink-500 to-pink-600",
-                      "from-violet-400 via-violet-500 to-violet-600"
-                    ];
-                  default:
-                    return [
-                      "from-blue-400 via-blue-500 to-blue-600",
-                      "from-indigo-400 via-indigo-500 to-indigo-600", 
-                      "from-purple-400 via-purple-500 to-purple-600",
-                      "from-pink-400 via-pink-500 to-pink-600"
-                    ];
-                }
-              };
-              
-              const gradients = getGradientForTheme();
               const gradient = gradients[index % gradients.length];
               
               return (

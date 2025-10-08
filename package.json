@@ -8,15 +8,17 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "npx prisma migrate reset --force && npm run db:seed"
+    "db:reset": "npx prisma migrate reset --force && npm run db:seed",
+    "generate-thumbnails": "tsx scripts/generate-thumbnails.ts",
+    "update-thumbnails": "tsx scripts/update-thumbnail-paths.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
     "@types/sqlite3": "^3.1.11",
-    "framer-motion": "^12.23.15",
     "next": "15.5.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "sharp": "^0.34.4",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
