@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getSimpleDatabase } from '@/lib/simple-db';
+import { generateThumbnailForUpload } from '@/lib/thumbnail';
 
 // POST /api/upload - Subir imágenes
 export async function POST(request: NextRequest) {
@@ -58,6 +59,17 @@ export async function POST(request: NextRequest) {
       const filePath = path.join(uploadsDir, fileName);
       await writeFile(filePath, buffer);
 
+      // Generar thumbnail automáticamente
+      let thumbnailUrl = `/thumbnails/${fileName}`;
+      try {
+        thumbnailUrl = await generateThumbnailForUpload(fileName, uploadsDir, thumbnailsDir);
+        console.log(`✅ Thumbnail generated: ${thumbnailUrl}`);
+      } catch (thumbnailError) {
+        console.warn(`⚠️  Could not generate thumbnail for ${fileName}, using fallback`);
+        // Si falla, usar la imagen original
+        thumbnailUrl = `/uploads/${fileName}`;
+      }
+
       const db = getSimpleDatabase();
 
       // Determinar el álbum a usar
@@ -91,7 +103,7 @@ export async function POST(request: NextRequest) {
         filename: fileName,
         originalName: file.name,
         fileUrl: `/uploads/${fileName}`,
-        thumbnailUrl: `/thumbnails/${fileName}`,
+        thumbnailUrl: thumbnailUrl, // Usar el thumbnail generado
         fileSize: file.size,
         width: 800, // Valores por defecto
         height: 600,
