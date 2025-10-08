@@ -20,10 +20,13 @@ model Album {
   coverImageUrl   String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   // Relación con imágenes
   images          Image[]
-  
+
+  // Índices para optimizar queries
+  @@index([year])
+  @@index([createdAt])
   @@map("albums")
 }
 
@@ -42,9 +45,13 @@ model Image {
   description     String?
   uploadedAt      DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   // Relación con álbum
   album           Album?   @relation(fields: [albumId], references: [id], onDelete: Cascade)
-  
+
+  // Índices para optimizar queries frecuentes
+  @@index([albumId])
+  @@index([uploadedAt])
+  @@index([albumId, uploadedAt])
   @@map("images")
 }
