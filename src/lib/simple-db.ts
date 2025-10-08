@@ -21,12 +21,39 @@ function initFiles() {
   }
 }
 
-// Leer datos
+// Cache en memoria para reducir lecturas de disco
+interface DataCache {
+  albums: { data: any[], timestamp: number } | null;
+  images: { data: any[], timestamp: number } | null;
+}
+
+const cache: DataCache = {
+  albums: null,
+  images: null
+};
+
+const CACHE_TTL = 5000; // 5 segundos
+
+// Leer datos con caché
 function readAlbums(): any[] {
   initFiles();
+
+  // Verificar si hay datos en caché válidos
+  if (cache.albums && Date.now() - cache.albums.timestamp < CACHE_TTL) {
+    return cache.albums.data;
+  }
+
   try {
     const data = fs.readFileSync(albumsFile, 'utf8');
-    return JSON.parse(data);
+    const albums = JSON.parse(data);
+
+    // Actualizar caché
+    cache.albums = {
+      data: albums,
+      timestamp: Date.now()
+    };
+
+    return albums;
   } catch (error) {
     console.error('Error reading albums:', error);
     return [];
@@ -35,20 +62,36 @@ function readAlbums(): any[] {
 
 function readImages(): any[] {
   initFiles();
+
+  // Verificar si hay datos en caché válidos
+  if (cache.images && Date.now() - cache.images.timestamp < CACHE_TTL) {
+    return cache.images.data;
+  }
+
   try {
     const data = fs.readFileSync(imagesFile, 'utf8');
-    return JSON.parse(data);
+    const images = JSON.parse(data);
+
+    // Actualizar caché
+    cache.images = {
+      data: images,
+      timestamp: Date.now()
+    };
+
+    return images;
   } catch (error) {
     console.error('Error reading images:', error);
     return [];
   }
 }
 
-// Escribir datos
+// Escribir datos e invalidar caché
 function writeAlbums(albums: any[]) {
   initFiles();
   try {
     fs.writeFileSync(albumsFile, JSON.stringify(albums, null, 2));
+    // Invalidar caché al escribir
+    cache.albums = null;
   } catch (error) {
     console.error('Error writing albums:', error);
     throw error;
@@ -59,6 +102,8 @@ function writeImages(images: any[]) {
   initFiles();
   try {
     fs.writeFileSync(imagesFile, JSON.stringify(images, null, 2));
+    // Invalidar caché al escribir
+    cache.images = null;
   } catch (error) {
     console.error('Error writing images:', error);
     throw error;
