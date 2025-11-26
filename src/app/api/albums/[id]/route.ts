@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSimpleDatabase } from '@/lib/simple-db';
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
   params: Promise<{
@@ -11,19 +11,22 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const db = getSimpleDatabase();
-    
-    const album = await db.getAlbumById(id);
-    
+
+    const album = await prisma.album.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { images: true }
+        }
+      }
+    });
+
     if (!album) {
       return NextResponse.json(
         { success: false, error: 'Álbum no encontrado' },
         { status: 404 }
       );
     }
-
-    // Obtener imágenes del álbum
-    const images = await db.getImagesByAlbum(id);
 
     return NextResponse.json({
       success: true,
@@ -33,8 +36,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         title: album.title,
         description: album.description,
         subAlbum: album.subAlbum,
-        imageCount: images.length,
-        createdAt: album.createdAt
+        coverImageUrl: album.coverImageUrl,
+        imageCount: album._count.images,
+        createdAt: album.createdAt,
+        updatedAt: album.updatedAt
       }
     });
 
@@ -52,42 +57,53 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const { title, description } = body;
+    const { title, description, subAlbum } = body;
 
-    // Obtener álbumes desde la API principal
-    const response = await fetch(`${request.nextUrl.origin}/api/albums`);
-    const data = await response.json();
-    
-    if (!data.success) {
-      return NextResponse.json(
-        { success: false, error: 'Error al obtener álbumes' },
-        { status: 500 }
-      );
-    }
-    
-    const album = data.data.find((a: any) => a.id === id);
-    
-    if (!album) {
+    // Verificar que el álbum existe
+    const existingAlbum = await prisma.album.findUnique({
+      where: { id }
+    });
+
+    if (!existingAlbum) {
       return NextResponse.json(
         { success: false, error: 'Álbum no encontrado' },
         { status: 404 }
       );
     }
 
-    // Por ahora, retornamos éxito (en una implementación real actualizaríamos el storage)
-    const updatedAlbum = {
-      ...album,
-      title: title?.trim() || album.title,
-      description: description?.trim() || album.description,
-    };
+    // Actualizar álbum
+    const updatedAlbum = await prisma.album.update({
+      where: { id },
+      data: {
+        title: title?.trim() || existingAlbum.title,
+        description: description?.trim() ?? existingAlbum.description,
+        subAlbum: subAlbum?.trim() ?? existingAlbum.subAlbum
+      },
+      include: {
+        _count: {
+          select: { images: true }
+        }
+      }
+    });
 
     return NextResponse.json({
       success: true,
-      data: updatedAlbum,
+      data: {
+        id: updatedAlbum.id,
+        year: updatedAlbum.year,
+        title: updatedAlbum.title,
+        description: updatedAlbum.description,
+        subAlbum: updatedAlbum.subAlbum,
+        coverImageUrl: updatedAlbum.coverImageUrl,
+        imageCount: updatedAlbum._count.images,
+        createdAt: updatedAlbum.createdAt,
+        updatedAt: updatedAlbum.updatedAt
+      },
       message: 'Álbum actualizado exitosamente'
     });
 
   } catch (error) {
+    console.error('Error updating album:', error);
     return NextResponse.json(
       { success: false, error: 'Error al actualizar álbum' },
       { status: 500 }
@@ -99,11 +115,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const db = getSimpleDatabase();
-    
+
     // Verificar si el álbum existe
-    const existingAlbum = await db.getAlbumById(id);
-    
+    const existingAlbum = await prisma.album.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { images: true }
+        }
+      }
+    });
+
     if (!existingAlbum) {
       return NextResponse.json(
         { success: false, error: 'Álbum no encontrado' },
@@ -111,8 +133,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Eliminar álbum y sus imágenes
-    await db.deleteAlbum(id);
+    // Eliminar álbum (las imágenes se eliminan en cascada gracias al schema)
+    await prisma.album.delete({
+      where: { id }
+    });
 
     return NextResponse.json({
       success: true,
@@ -122,7 +146,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         title: existingAlbum.title,
         description: existingAlbum.description,
         subAlbum: existingAlbum.subAlbum,
-        imageCount: 0,
+        imageCount: existingAlbum._count.images,
         createdAt: existingAlbum.createdAt
       },
       message: 'Álbum eliminado exitosamente'

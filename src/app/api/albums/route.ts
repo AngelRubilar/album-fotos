@@ -1,15 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSimpleDatabase } from '@/lib/simple-db';
+import { prisma } from '@/lib/prisma';
 
 // GET /api/albums - Obtener todos los álbumes
 export async function GET() {
   try {
-    const db = getSimpleDatabase();
-    const albums = await db.getAlbums();
+    const albums = await prisma.album.findMany({
+      include: {
+        _count: {
+          select: { images: true }
+        }
+      },
+      orderBy: { year: 'desc' }
+    });
+
+    const albumsWithCount = albums.map(album => ({
+      id: album.id,
+      year: album.year,
+      title: album.title,
+      description: album.description,
+      subAlbum: album.subAlbum,
+      coverImageUrl: album.coverImageUrl,
+      imageCount: album._count.images,
+      createdAt: album.createdAt,
+      updatedAt: album.updatedAt
+    }));
 
     return NextResponse.json({
       success: true,
-      data: albums
+      data: albumsWithCount
     }, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
@@ -40,14 +58,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getSimpleDatabase();
+    // Verificar si ya existe un álbum con el mismo año, título y subálbum
+    const existingAlbum = await prisma.album.findFirst({
+      where: {
+        year: parseInt(year),
+        title: title.trim(),
+        subAlbum: subAlbum?.trim() || null
+      }
+    });
+
+    if (existingAlbum) {
+      return NextResponse.json(
+        { success: false, error: `Ya existe un álbum con ese nombre para el año ${year}` },
+        { status: 400 }
+      );
+    }
 
     // Crear nuevo álbum en la base de datos
-    const newAlbum = await db.createAlbum({
-      year: parseInt(year),
-      title: title.trim(),
-      description: description?.trim() || '',
-      subAlbum: subAlbum?.trim() || undefined
+    const newAlbum = await prisma.album.create({
+      data: {
+        year: parseInt(year),
+        title: title.trim(),
+        description: description?.trim() || null,
+        subAlbum: subAlbum?.trim() || null
+      }
     });
 
     return NextResponse.json({

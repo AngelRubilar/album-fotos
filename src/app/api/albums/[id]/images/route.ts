@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSimpleDatabase } from '@/lib/simple-db';
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
   params: Promise<{
@@ -8,22 +8,26 @@ interface RouteParams {
 }
 
 // GET /api/albums/[id]/images - Obtener imágenes de un álbum específico
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const db = getSimpleDatabase();
-    
-    // Verificar que el álbum existe
-    const album = await db.getAlbumById(id);
+
+    // Obtener álbum con sus imágenes
+    const album = await prisma.album.findUnique({
+      where: { id },
+      include: {
+        images: {
+          orderBy: { uploadedAt: 'desc' }
+        }
+      }
+    });
+
     if (!album) {
       return NextResponse.json(
         { success: false, error: 'Álbum no encontrado' },
         { status: 404 }
       );
     }
-
-    // Obtener imágenes del álbum
-    const images = await db.getImagesByAlbum(id);
 
     return NextResponse.json({
       success: true,
@@ -35,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           description: album.description,
           subAlbum: album.subAlbum
         },
-        images: images
+        images: album.images
       }
     });
   } catch (error) {

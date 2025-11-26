@@ -7,16 +7,17 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// Modelo de Álbumes (organizados por años)
+// Modelo de Álbumes (organizados por años, permite múltiples álbumes por año)
 model Album {
   id              String   @id @default(cuid())
-  year            Int      @unique
-  title           String?
+  year            Int
+  title           String
   description     String?
+  subAlbum        String?  // Categoría o sub-álbum (ej: "Vacaciones", "Eventos")
   coverImageUrl   String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -25,6 +26,7 @@ model Album {
   images          Image[]
 
   // Índices para optimizar queries
+  @@unique([year, title, subAlbum]) // Evitar duplicados
   @@index([year])
   @@index([createdAt])
   @@map("albums")

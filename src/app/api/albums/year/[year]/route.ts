@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSimpleDatabase } from '@/lib/simple-db';
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
   params: Promise<{
@@ -8,7 +8,7 @@ interface RouteParams {
 }
 
 // GET /api/albums/year/[year] - Obtener todos los álbumes de un año específico
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { year } = await params;
     const yearNumber = parseInt(year);
@@ -20,12 +20,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const db = getSimpleDatabase();
-    const albums = await db.getAlbumsByYear(yearNumber);
+    const albums = await prisma.album.findMany({
+      where: { year: yearNumber },
+      include: {
+        _count: {
+          select: { images: true }
+        }
+      },
+      orderBy: [
+        { subAlbum: 'asc' }, // Álbumes principales (null) primero
+        { createdAt: 'desc' }
+      ]
+    });
+
+    const albumsWithCount = albums.map(album => ({
+      id: album.id,
+      year: album.year,
+      title: album.title,
+      description: album.description,
+      subAlbum: album.subAlbum,
+      coverImageUrl: album.coverImageUrl,
+      imageCount: album._count.images,
+      createdAt: album.createdAt,
+      updatedAt: album.updatedAt
+    }));
 
     return NextResponse.json({
       success: true,
-      data: albums
+      data: albumsWithCount
     }, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'

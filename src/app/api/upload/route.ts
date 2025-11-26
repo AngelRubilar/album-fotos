@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-import { getSimpleDatabase } from '@/lib/simple-db';
+import { prisma } from '@/lib/prisma';
 import { generateThumbnailForUpload } from '@/lib/thumbnail';
 
 // POST /api/upload - Subir imágenes
@@ -36,10 +36,10 @@ export async function POST(request: NextRequest) {
 
       // Crear nombre único para el archivo
       const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substr(2, 9);
+      const randomId = Math.random().toString(36).substring(2, 11);
       const fileExtension = path.extname(file.name);
       const fileName = `${timestamp}_${randomId}${fileExtension}`;
-      
+
       // Convertir archivo a buffer
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
@@ -47,11 +47,11 @@ export async function POST(request: NextRequest) {
       // Crear directorios si no existen
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
       const thumbnailsDir = path.join(process.cwd(), 'public', 'thumbnails');
-      
+
       try {
         await mkdir(uploadsDir, { recursive: true });
         await mkdir(thumbnailsDir, { recursive: true });
-      } catch (error) {
+      } catch {
         // Los directorios ya existen
       }
 
@@ -64,51 +64,68 @@ export async function POST(request: NextRequest) {
       try {
         thumbnailUrl = await generateThumbnailForUpload(fileName, uploadsDir, thumbnailsDir);
         console.log(`✅ Thumbnail generated: ${thumbnailUrl}`);
-      } catch (thumbnailError) {
+      } catch {
         console.warn(`⚠️  Could not generate thumbnail for ${fileName}, using fallback`);
         // Si falla, usar la imagen original
         thumbnailUrl = `/uploads/${fileName}`;
       }
 
-      const db = getSimpleDatabase();
-
       // Determinar el álbum a usar
       let targetAlbumId: string;
-      
+      let targetAlbum;
+
       if (albumId) {
         // Usar el álbum específico seleccionado
-        const album = await db.getAlbumById(albumId);
-        if (!album) {
+        targetAlbum = await prisma.album.findUnique({
+          where: { id: albumId }
+        });
+
+        if (!targetAlbum) {
           return NextResponse.json(
-            { success: false, error: `No existe el álbum seleccionado` },
+            { success: false, error: 'No existe el álbum seleccionado' },
             { status: 400 }
           );
         }
         targetAlbumId = albumId;
       } else {
-        // Compatibilidad con el método anterior (por año)
-        const album = await db.getAlbumByYear(parseInt(albumYear));
-        if (!album) {
+        // Compatibilidad con el método anterior (por año) - buscar primer álbum del año
+        targetAlbum = await prisma.album.findFirst({
+          where: {
+            year: parseInt(albumYear),
+            subAlbum: null // Buscar álbum principal del año
+          }
+        });
+
+        if (!targetAlbum) {
+          // Si no hay álbum principal, buscar cualquier álbum del año
+          targetAlbum = await prisma.album.findFirst({
+            where: { year: parseInt(albumYear) }
+          });
+        }
+
+        if (!targetAlbum) {
           return NextResponse.json(
             { success: false, error: `No existe un álbum para el año ${albumYear}` },
             { status: 400 }
           );
         }
-        targetAlbumId = album.id;
+        targetAlbumId = targetAlbum.id;
       }
 
       // Crear entrada de imagen en la base de datos
-      const imageData = await db.createImage({
-        albumId: targetAlbumId,
-        filename: fileName,
-        originalName: file.name,
-        fileUrl: `/uploads/${fileName}`,
-        thumbnailUrl: thumbnailUrl, // Usar el thumbnail generado
-        fileSize: file.size,
-        width: 800, // Valores por defecto
-        height: 600,
-        mimeType: file.type,
-        description: ''
+      const imageData = await prisma.image.create({
+        data: {
+          albumId: targetAlbumId,
+          filename: fileName,
+          originalName: file.name,
+          fileUrl: `/uploads/${fileName}`,
+          thumbnailUrl: thumbnailUrl,
+          fileSize: file.size,
+          width: 800, // Valores por defecto
+          height: 600,
+          mimeType: file.type,
+          description: ''
+        }
       });
 
       uploadedImages.push({
@@ -122,8 +139,8 @@ export async function POST(request: NextRequest) {
         height: imageData.height,
         mimeType: imageData.mimeType,
         description: imageData.description,
-        albumYear: albumId ? (await db.getAlbumById(targetAlbumId)).year : parseInt(albumYear),
-        uploadedAt: new Date().toISOString()
+        albumYear: targetAlbum.year,
+        uploadedAt: imageData.uploadedAt.toISOString()
       });
     }
 
@@ -149,7 +166,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/upload - Obtener imágenes por álbum
+// GET /api/upload - Obtener imágenes por año del álbum
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -162,10 +179,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getSimpleDatabase();
-
-    // Obtener imágenes por año del álbum
-    const images = await db.getImagesByAlbumYear(parseInt(albumYear));
+    // Obtener todas las imágenes de álbumes del año especificado
+    const images = await prisma.image.findMany({
+      where: {
+        album: {
+          year: parseInt(albumYear)
+        }
+      },
+      orderBy: { uploadedAt: 'desc' }
+    });
 
     return NextResponse.json({
       success: true,

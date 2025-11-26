@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSimpleDatabase } from '@/lib/simple-db';
+import { prisma } from '@/lib/prisma';
 import { unlink } from 'fs/promises';
 import path from 'path';
 
@@ -10,15 +10,15 @@ interface RouteParams {
 }
 
 // DELETE /api/images/[id] - Eliminar imagen específica
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const db = getSimpleDatabase();
-    
+
     // Obtener la imagen para verificar que existe
-    const images = await db.getAllImages();
-    const image = images.find(img => img.id === id);
-    
+    const image = await prisma.image.findUnique({
+      where: { id }
+    });
+
     if (!image) {
       return NextResponse.json(
         { success: false, error: 'Imagen no encontrada' },
@@ -30,20 +30,23 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
       const thumbnailsDir = path.join(process.cwd(), 'public', 'thumbnails');
-      
+
       const filePath = path.join(uploadsDir, image.filename);
-      const thumbnailPath = path.join(thumbnailsDir, image.filename);
-      
+
+      // Obtener nombre del thumbnail (puede tener extensión .webp)
+      const thumbnailBaseName = path.basename(image.filename, path.extname(image.filename));
+      const thumbnailPath = path.join(thumbnailsDir, `${thumbnailBaseName}.webp`);
+
       // Intentar eliminar archivos (no fallar si no existen)
       try {
         await unlink(filePath);
-      } catch (error) {
+      } catch {
         console.log('Archivo principal no encontrado:', filePath);
       }
-      
+
       try {
         await unlink(thumbnailPath);
-      } catch (error) {
+      } catch {
         console.log('Miniatura no encontrada:', thumbnailPath);
       }
     } catch (error) {
@@ -52,7 +55,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Eliminar de la base de datos
-    await db.deleteImage(id);
+    await prisma.image.delete({
+      where: { id }
+    });
 
     return NextResponse.json({
       success: true,
