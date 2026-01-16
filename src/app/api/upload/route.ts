@@ -4,6 +4,17 @@ import path from 'path';
 import { prisma } from '@/lib/prisma';
 import { generateThumbnailForUpload } from '@/lib/thumbnail';
 
+// Configuración para permitir archivos grandes (500MB máximo)
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+// Aumentar el límite de tamaño del body para Next.js App Router
+export const maxDuration = 300; // 5 minutos de timeout
+export const dynamic = 'force-dynamic';
+
 // POST /api/upload - Subir imágenes
 export async function POST(request: NextRequest) {
   try {
@@ -70,6 +81,18 @@ export async function POST(request: NextRequest) {
         thumbnailUrl = `/uploads/${fileName}`;
       }
 
+      // Obtener metadatos reales de la imagen
+      let realWidth = 800;
+      let realHeight = 600;
+      try {
+        const sharp = (await import('sharp')).default;
+        const metadata = await sharp(buffer).metadata();
+        realWidth = metadata.width || 800;
+        realHeight = metadata.height || 600;
+      } catch (error) {
+        console.warn(`⚠️ Could not read image metadata for ${fileName}, using defaults`);
+      }
+
       // Determinar el álbum a usar
       let targetAlbumId: string;
       let targetAlbum;
@@ -121,8 +144,8 @@ export async function POST(request: NextRequest) {
           fileUrl: `/uploads/${fileName}`,
           thumbnailUrl: thumbnailUrl,
           fileSize: file.size,
-          width: 800, // Valores por defecto
-          height: 600,
+          width: realWidth,  // Dimensiones reales de la imagen
+          height: realHeight,
           mimeType: file.type,
           description: ''
         }

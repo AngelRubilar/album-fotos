@@ -1,3 +1,5 @@
+name: album-fotos
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -19,8 +21,91 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    labels:
+      # Label de CasaOS para el icono
+      icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/postgres.png
+    networks:
+      - album-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: album-fotos-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/album_fotos?schema=public
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # CRÍTICO: Montar carpetas de imágenes para NO perder datos
+      - ./public/uploads:/app/public/uploads
+      - ./public/thumbnails:/app/public/thumbnails
+      - ./data:/app/data
+    networks:
+      - album-network
+    labels:
+      # Labels para CasaOS
+      icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextjs.png
+      net.unraid.docker.managed: composeman
+      net.unraid.docker.icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextjs.png
+    x-casaos:
+      # Metadata de CasaOS para mejor integración
+      architectures:
+        - amd64
+        - arm64
+      main: app
+      description:
+        en_us: "Album de Fotos - Sistema de gestión de álbumes fotográficos organizados por años"
+      tagline:
+        en_us: "Galería de fotos moderna con Next.js"
+      developer: "Custom"
+      author: "Custom"
+      icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextjs.png
+      thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/nextjs.png
+      title:
+        en_us: "Album de Fotos"
+      category: "Media"
+      port_map: "3000"
+      tips:
+        before_install:
+          en_us: |
+            Aplicación de álbum de fotos con Next.js y PostgreSQL.
+            Accede en: http://tu-servidor:3000
+      envs:
+        - container: NODE_ENV
+          description:
+            en_us: "Node environment (production/development)"
+        - container: DATABASE_URL
+          description:
+            en_us: "PostgreSQL connection string"
+      ports:
+        - container: "3000"
+          description:
+            en_us: "WebUI HTTP Port"
+          protocol: "tcp"
+      volumes:
+        - container: /app/public/uploads
+          description:
+            en_us: "Imágenes originales subidas"
+        - container: /app/public/thumbnails
+          description:
+            en_us: "Miniaturas generadas"
+        - container: /app/data
+          description:
+            en_us: "Datos de la aplicación"
+
+networks:
+  album-network:
+    driver: bridge
 
 volumes:
-  # Volumen nombrado que persiste los datos
+  # Volumen nombrado que persiste los datos de PostgreSQL
   postgres_data:
     driver: local

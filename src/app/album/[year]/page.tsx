@@ -200,9 +200,9 @@ export default function AlbumPage({ params }: AlbumPageProps) {
           </p>
         </div>
 
-        {/* Botón de volver si hay un álbum seleccionado */}
-        {selectedAlbum && (
-          <div className="mb-8">
+        {/* Botones de navegación y descarga */}
+        {selectedAlbum && images.length > 0 && (
+          <div className="mb-8 flex gap-4">
             <button
               onClick={() => {
                 setSelectedAlbum(null);
@@ -219,6 +219,56 @@ export default function AlbumPage({ params }: AlbumPageProps) {
               }`}
             >
               ← Ver todos los álbumes
+            </button>
+
+            {/* Botón de Descarga */}
+            <button
+              onClick={async () => {
+                try {
+                  const confirmed = confirm(
+                    `¿Descargar ${images.length} imágenes en alta calidad?\n\nEsto puede tomar unos momentos.`
+                  );
+
+                  if (!confirmed) return;
+
+                  // Descargar ZIP
+                  const response = await fetch(`/api/albums/${selectedAlbum}/download`);
+
+                  if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Error al descargar');
+                  }
+
+                  const blob = await response.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${selectedAlbumData?.year}_${selectedAlbumData?.title}.zip`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+
+                  alert('✅ Álbum descargado exitosamente');
+                } catch (error) {
+                  console.error('Download error:', error);
+                  alert(`❌ Error: ${(error as Error).message}`);
+                }
+              }}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 ${
+                currentTheme === 'ocean' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                currentTheme === 'sunset' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                currentTheme === 'forest' ? 'bg-emerald-700 hover:bg-emerald-800 text-white' :
+                currentTheme === 'cosmic' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                currentTheme === 'dark' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                'bg-green-600 hover:bg-green-700 text-white'
+              }`}
+              title="Descargar todas las imágenes en alta calidad"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Descargar Álbum ({images.length} fotos)
             </button>
           </div>
         )}

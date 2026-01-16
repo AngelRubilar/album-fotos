@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Configuración para Docker (standalone output)
+  output: 'standalone',
+
   images: {
     // Formatos de imagen optimizados (AVIF primero, WebP como fallback)
     formats: ['image/avif', 'image/webp'],
@@ -38,6 +41,20 @@ const nextConfig: NextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Headers para endpoint de descarga
+      {
+        source: '/api/albums/:id/download',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/zip',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate',
           },
         ],
       },

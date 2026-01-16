@@ -14,7 +14,9 @@
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
+    "@types/archiver": "^7.0.0",
     "@types/pg": "^8.15.5",
+    "archiver": "^7.0.1",
     "next": "15.5.3",
     "pg": "^8.16.3",
     "react": "19.1.0",

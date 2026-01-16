@@ -78,43 +78,63 @@ function UploadContent() {
       alert('Por favor selecciona un álbum');
       return;
     }
-    
+
     setUploading(true);
     setUploadProgress(0);
-    
+
     try {
-      const formData = new FormData();
-      
-      // Agregar archivos al FormData
-      selectedFiles.forEach((file) => {
-        formData.append('files', file);
-      });
-      
-      // Agregar ID del álbum seleccionado
-      formData.append('albumId', selectedAlbum);
-      
-      // Simular progreso
-      for (let i = 0; i <= 90; i += 10) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        setUploadProgress(i);
+      // Subir en lotes de 10 imágenes para evitar timeouts
+      const BATCH_SIZE = 10;
+      const totalFiles = selectedFiles.length;
+      let uploadedCount = 0;
+      let failedCount = 0;
+
+      for (let i = 0; i < totalFiles; i += BATCH_SIZE) {
+        const batch = selectedFiles.slice(i, i + BATCH_SIZE);
+        const formData = new FormData();
+
+        // Agregar archivos del lote al FormData
+        batch.forEach((file) => {
+          formData.append('files', file);
+        });
+
+        // Agregar ID del álbum seleccionado
+        formData.append('albumId', selectedAlbum);
+
+        try {
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            uploadedCount += data.data.length;
+          } else {
+            failedCount += batch.length;
+            console.error(`Error en lote: ${data.error}`);
+          }
+        } catch (batchError) {
+          failedCount += batch.length;
+          console.error('Error subiendo lote:', batchError);
+        }
+
+        // Actualizar progreso real
+        const progress = Math.round(((i + batch.length) / totalFiles) * 100);
+        setUploadProgress(progress);
       }
-      
-      // Subir archivos
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setUploadProgress(100);
-        alert(`¡Éxito! Se subieron ${data.data.length} imagen(es).`);
-        setSelectedFiles([]);
+
+      setUploadProgress(100);
+
+      if (failedCount === 0) {
+        alert(`¡Éxito! Se subieron ${uploadedCount} imagen(es).`);
       } else {
-        alert(`Error: ${data.error}`);
+        alert(`Se subieron ${uploadedCount} imagen(es). ${failedCount} fallaron.`);
       }
-      
+
+      setSelectedFiles([]);
+
     } catch (error) {
       console.error('Error uploading files:', error);
       alert('Error al subir las imágenes');
