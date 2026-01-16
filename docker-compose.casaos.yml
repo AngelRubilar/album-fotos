@@ -1,0 +1,151 @@
+name: album-fotos
+
+services:
+  app:
+    image: ghcr.io/angelrubilar/album-fotos:production-latest
+    container_name: album-fotos-app
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:album_fotos_pass_2026@album-fotos-postgres:5432/album_fotos?schema=public
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    volumes:
+      - type: bind
+        source: /DATA/AppData/album-fotos/uploads
+        target: /app/public/uploads
+      - type: bind
+        source: /DATA/AppData/album-fotos/thumbnails
+        target: /app/public/thumbnails
+      - type: bind
+        source: /DATA/AppData/album-fotos/data
+        target: /app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    x-casaos:
+      envs:
+        - container: NODE_ENV
+          description:
+            en_us: Node Environment (production/development)
+        - container: DATABASE_URL
+          description:
+            en_us: PostgreSQL Connection String
+      ports:
+        - container: "3000"
+          description:
+            en_us: Web UI Port
+          protocol: tcp
+      volumes:
+        - container: /app/public/uploads
+          description:
+            en_us: Uploaded Images Directory
+        - container: /app/public/thumbnails
+          description:
+            en_us: Image Thumbnails Directory
+        - container: /app/data
+          description:
+            en_us: Application Data
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: album-fotos-postgres
+    restart: unless-stopped
+    network_mode: bridge
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: album_fotos_pass_2026
+      POSTGRES_DB: album_fotos
+    volumes:
+      - type: volume
+        source: album-fotos-postgres-data
+        target: /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    x-casaos:
+      envs:
+        - container: POSTGRES_USER
+          description:
+            en_us: PostgreSQL Username
+        - container: POSTGRES_PASSWORD
+          description:
+            en_us: PostgreSQL Password
+        - container: POSTGRES_DB
+          description:
+            en_us: Database Name
+
+volumes:
+  album-fotos-postgres-data:
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: app
+  author: AngelRubilar
+  category: Media
+  description:
+    en_us: Album de Fotos - Tu galería de fotos personal organizada por años. Gestiona tus recuerdos con una interfaz moderna e intuitiva construida con Next.js 15 y PostgreSQL.
+    es_es: Album de Fotos - Tu galería de fotos personal organizada por años. Gestiona tus recuerdos con una interfaz moderna e intuitiva construida con Next.js 15 y PostgreSQL.
+  developer: AngelRubilar
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/photoprism.png
+  tagline:
+    en_us: Modern photo gallery with Next.js
+    es_es: Galería de fotos moderna con Next.js
+  thumbnail: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/photoprism.png
+  title:
+    en_us: Album de Fotos
+    es_es: Album de Fotos
+  port_map: "3000"
+  scheme: http
+  hostname: ""
+  index: /
+  store_app_id: album-fotos-angelrubilar
+  tips:
+    before_install:
+      en_us: |
+        Album de Fotos - Personal Photo Gallery
+
+        Requirements:
+        - PostgreSQL database will be created automatically
+        - Uploads directory will be created at /DATA/AppData/album-fotos/
+
+        After installation:
+        - Access at: http://YOUR-SERVER-IP:3000
+        - First run will initialize the database schema
+
+        Features:
+        - Photo organization by year
+        - Automatic thumbnail generation
+        - Album management
+        - Modern Next.js 15 interface
+      es_es: |
+        Album de Fotos - Galería de Fotos Personal
+
+        Requisitos:
+        - La base de datos PostgreSQL se creará automáticamente
+        - El directorio de uploads se creará en /DATA/AppData/album-fotos/
+
+        Después de la instalación:
+        - Accede en: http://IP-DE-TU-SERVIDOR:3000
+        - La primera ejecución inicializará el esquema de base de datos
+
+        Características:
+        - Organización de fotos por año
+        - Generación automática de miniaturas
+        - Gestión de álbumes
+        - Interfaz moderna con Next.js 15
