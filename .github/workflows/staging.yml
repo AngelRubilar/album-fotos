@@ -55,6 +55,13 @@ jobs:
         with:
           authkey: ${{ secrets.TS_AUTHKEY }}
 
+      - name: Wait for Tailscale routes to propagate
+        run: |
+          echo "Esperando 30 segundos para que Tailscale estabilice las rutas..."
+          sleep 30
+          echo "Probando conectividad..."
+          ping -c 3 100.69.79.30 || echo "Ping falló, pero intentaremos SSH de todos modos"
+
       - name: Deploy to staging server
         uses: appleboy/ssh-action@v1.0.3
         with:
