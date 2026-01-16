@@ -2,10 +2,11 @@ name: album-fotos
 
 services:
   app:
-    image: ghcr.io/angelrubilar/album-fotos:production-latest
+    image: ghcr.io/angelrubilar/album-fotos:staging-latest
     container_name: album-fotos-app
     restart: unless-stopped
-    network_mode: bridge
+    networks:
+      - album-fotos-network
     ports:
       - target: 3000
         published: 3000
@@ -62,7 +63,8 @@ services:
     image: postgres:15-alpine
     container_name: album-fotos-postgres
     restart: unless-stopped
-    network_mode: bridge
+    networks:
+      - album-fotos-network
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: album_fotos_pass_2026
@@ -87,6 +89,10 @@ services:
         - container: POSTGRES_DB
           description:
             en_us: Database Name
+
+networks:
+  album-fotos-network:
+    driver: bridge
 
 volumes:
   album-fotos-postgres-data:
