@@ -45,6 +45,12 @@ docs/
 
 # Backups (NO incluir en imagen Docker)
 backups/
+backupsmigracion*.sql
+
+# Uploads - Los archivos se montan como volúmenes
+public/uploads/
+public/thumbnails/
+data/
 
 # Scripts de desarrollo
 backup-db.ps1
