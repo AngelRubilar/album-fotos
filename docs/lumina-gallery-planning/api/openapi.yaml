@@ -1,0 +1,1701 @@
+openapi: 3.1.0
+info:
+  title: Lumina Gallery API
+  version: 1.0.0
+  description: |
+    RESTful API for Lumina Gallery - A modern photo gallery application.
+
+    ## Features
+    - Timeline view with infinite scroll
+    - Favorites management
+    - Advanced search with faceted filtering
+    - Smart albums with dynamic rules
+    - Tags management
+    - EXIF metadata extraction
+    - Image upload with automatic processing
+
+    ## Authentication
+    Currently, the API is designed for single-user/local deployment.
+    Authentication headers are reserved for future multi-user support.
+
+    ## Rate Limiting
+    - Anonymous: 30 requests/minute
+    - Upload endpoint: 10 requests/minute
+    - Search endpoint: 50 requests/minute
+
+    Rate limit headers included in all responses:
+    - `X-RateLimit-Limit`
+    - `X-RateLimit-Remaining`
+    - `X-RateLimit-Reset`
+  contact:
+    name: Lumina Gallery
+    url: https://github.com/lumina-gallery
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://api.lumina-gallery.com/v1
+    description: Production server (example)
+
+tags:
+  - name: Timeline
+    description: Chronological image viewing with grouping
+  - name: Favorites
+    description: Favorite/unfavorite images
+  - name: Search
+    description: Advanced search with filters and facets
+  - name: Smart Albums
+    description: Dynamic albums based on rules
+  - name: Tags
+    description: Tag management for images
+  - name: Images
+    description: Image CRUD operations
+  - name: Albums
+    description: Album management
+  - name: Upload
+    description: Image upload with processing
+
+paths:
+  # ============================================================================
+  # TIMELINE
+  # ============================================================================
+  /timeline:
+    get:
+      summary: Get timeline of images
+      description: |
+        Returns a chronologically ordered list of all images.
+        Supports cursor-based pagination and optional grouping by day/month/year.
+      tags:
+        - Timeline
+      operationId: getTimeline
+      parameters:
+        - name: cursor
+          in: query
+          description: Pagination cursor (image ID)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of items per page (1-100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: order
+          in: query
+          description: Sort order by date
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: groupBy
+          in: query
+          description: Group images by time period
+          schema:
+            type: string
+            enum: [day, month, year]
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimelineResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ============================================================================
+  # FAVORITES
+  # ============================================================================
+  /favorites:
+    get:
+      summary: Get all favorited images
+      tags:
+        - Favorites
+      operationId: getFavorites
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [favoritedAt, takenAt, uploadedAt]
+            default: favoritedAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: List of favorited images
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoritesResponse'
+
+  /images/{id}/favorite:
+    put:
+      summary: Add image to favorites
+      tags:
+        - Favorites
+      operationId: addToFavorites
+      parameters:
+        - $ref: '#/components/parameters/ImageId'
+      responses:
+        '200':
+          description: Image added to favorites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteToggleResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Remove image from favorites
+      tags:
+        - Favorites
+      operationId: removeFromFavorites
+      parameters:
+        - $ref: '#/components/parameters/ImageId'
+      responses:
+        '200':
+          description: Image removed from favorites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteToggleResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================================================
+  # SEARCH
+  # ============================================================================
+  /search:
+    get:
+      summary: Search images with filters
+      description: |
+        Advanced search endpoint supporting text search and multiple filters.
+        Returns matching images along with facets for filter refinement.
+      tags:
+        - Search
+      operationId: searchImages
+      parameters:
+        - name: q
+          in: query
+          description: Text search query
+          schema:
+            type: string
+            maxLength: 200
+        - name: albumId
+          in: query
+          schema:
+            type: string
+        - name: tags
+          in: query
+          description: Comma-separated tag names
+          schema:
+            type: string
+        - name: camera
+          in: query
+          schema:
+            type: string
+        - name: lens
+          in: query
+          schema:
+            type: string
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: isFavorite
+          in: query
+          schema:
+            type: boolean
+        - name: minWidth
+          in: query
+          schema:
+            type: integer
+        - name: minHeight
+          in: query
+          schema:
+            type: integer
+        - name: orientation
+          in: query
+          schema:
+            type: string
+            enum: [landscape, portrait, square]
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [takenAt, uploadedAt, filename, fileSize]
+            default: takenAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Search results with facets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  # ============================================================================
+  # SMART ALBUMS
+  # ============================================================================
+  /smart-albums:
+    get:
+      summary: List all smart albums
+      tags:
+        - Smart Albums
+      operationId: listSmartAlbums
+      responses:
+        '200':
+          description: List of smart albums
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartAlbumsListResponse'
+
+    post:
+      summary: Create a new smart album
+      tags:
+        - Smart Albums
+      operationId: createSmartAlbum
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSmartAlbumRequest'
+      responses:
+        '201':
+          description: Smart album created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartAlbumResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /smart-albums/{id}:
+    get:
+      summary: Get smart album details
+      tags:
+        - Smart Albums
+      operationId: getSmartAlbum
+      parameters:
+        - $ref: '#/components/parameters/SmartAlbumId'
+      responses:
+        '200':
+          description: Smart album details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartAlbumResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update smart album (full replace)
+      tags:
+        - Smart Albums
+      operationId: updateSmartAlbum
+      parameters:
+        - $ref: '#/components/parameters/SmartAlbumId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSmartAlbumRequest'
+      responses:
+        '200':
+          description: Smart album updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartAlbumResponse'
+
+    patch:
+      summary: Partial update smart album
+      tags:
+        - Smart Albums
+      operationId: patchSmartAlbum
+      parameters:
+        - $ref: '#/components/parameters/SmartAlbumId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSmartAlbumRequest'
+      responses:
+        '200':
+          description: Smart album updated
+
+    delete:
+      summary: Delete smart album
+      tags:
+        - Smart Albums
+      operationId: deleteSmartAlbum
+      parameters:
+        - $ref: '#/components/parameters/SmartAlbumId'
+      responses:
+        '204':
+          description: Smart album deleted
+
+  /smart-albums/{id}/images:
+    get:
+      summary: Get images matching smart album rules
+      tags:
+        - Smart Albums
+      operationId: getSmartAlbumImages
+      parameters:
+        - $ref: '#/components/parameters/SmartAlbumId'
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Images matching smart album rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartAlbumImagesResponse'
+
+  # ============================================================================
+  # TAGS
+  # ============================================================================
+  /tags:
+    get:
+      summary: List all tags
+      tags:
+        - Tags
+      operationId: listTags
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [general, location, event, person, object, scene, emotion, color, custom]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [name, count, createdAt]
+            default: count
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        '200':
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagsListResponse'
+
+    post:
+      summary: Create a new tag
+      tags:
+        - Tags
+      operationId: createTag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagRequest'
+      responses:
+        '201':
+          description: Tag created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /images/{id}/tags:
+    post:
+      summary: Add tags to an image
+      tags:
+        - Tags
+      operationId: addTagsToImage
+      parameters:
+        - $ref: '#/components/parameters/ImageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/AddTagsByIdRequest'
+                - $ref: '#/components/schemas/AddTagsByNameRequest'
+      responses:
+        '200':
+          description: Tags added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageTagsResponse'
+
+  /images/{id}/tags/{tagId}:
+    delete:
+      summary: Remove a tag from an image
+      tags:
+        - Tags
+      operationId: removeTagFromImage
+      parameters:
+        - $ref: '#/components/parameters/ImageId'
+        - $ref: '#/components/parameters/TagId'
+      responses:
+        '200':
+          description: Tag removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageTagsRemovedResponse'
+
+  # ============================================================================
+  # IMAGES
+  # ============================================================================
+  /images/{id}:
+    get:
+      summary: Get image details with EXIF data
+      tags:
+        - Images
+      operationId: getImage
+      parameters:
+        - $ref: '#/components/parameters/ImageId'
+      responses:
+        '200':
+          description: Image details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update image metadata
+      tags:
+        - Images
+      operationId: updateImage
+      parameters:
+        - $ref: '#/components/parameters/ImageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateImageRequest'
+      responses:
+        '200':
+          description: Image updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageDetailResponse'
+
+    delete:
+      summary: Delete image
+      tags:
+        - Images
+      operationId: deleteImage
+      parameters:
+        - $ref: '#/components/parameters/ImageId'
+      responses:
+        '204':
+          description: Image deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================================================
+  # UPLOAD
+  # ============================================================================
+  /upload:
+    post:
+      summary: Upload images
+      description: |
+        Upload one or more images with automatic thumbnail generation and EXIF extraction.
+
+        Maximum 10 files per request, 50MB per file.
+        Supported formats: JPEG, PNG, WebP, GIF, HEIC, HEIF, AVIF
+      tags:
+        - Upload
+      operationId: uploadImages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - files
+                - albumId
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 10
+                albumId:
+                  type: string
+                extractExif:
+                  type: boolean
+                  default: true
+                generateThumbnail:
+                  type: boolean
+                  default: true
+                tags:
+                  type: string
+                  description: JSON array or comma-separated tag names
+      responses:
+        '201':
+          description: Images uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  # ============================================================================
+  # ALBUMS
+  # ============================================================================
+  /albums:
+    get:
+      summary: List all albums
+      tags:
+        - Albums
+      operationId: listAlbums
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [year, title, createdAt, imageCount]
+            default: year
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: includeEmpty
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: List of albums
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumsListResponse'
+
+    post:
+      summary: Create a new album
+      tags:
+        - Albums
+      operationId: createAlbum
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlbumRequest'
+      responses:
+        '201':
+          description: Album created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  # ============================================================================
+  # PARAMETERS
+  # ============================================================================
+  parameters:
+    ImageId:
+      name: id
+      in: path
+      required: true
+      description: Image ID
+      schema:
+        type: string
+
+    SmartAlbumId:
+      name: id
+      in: path
+      required: true
+      description: Smart Album ID
+      schema:
+        type: string
+
+    TagId:
+      name: tagId
+      in: path
+      required: true
+      description: Tag ID
+      schema:
+        type: string
+
+  # ============================================================================
+  # HEADERS
+  # ============================================================================
+  headers:
+    X-RateLimit-Limit:
+      description: Maximum requests per window
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: Remaining requests in current window
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: Unix timestamp when window resets
+      schema:
+        type: integer
+
+  # ============================================================================
+  # RESPONSES
+  # ============================================================================
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: VALIDATION_ERROR
+              message: Request validation failed
+              details:
+                errors:
+                  - field: limit
+                    message: Number must be less than or equal to 100
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: IMAGE_NOT_FOUND
+              message: "Image not found: img_abc123"
+
+    Conflict:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    PayloadTooLarge:
+      description: File size exceeds limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    UnsupportedMediaType:
+      description: File type not supported
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          description: Seconds until rate limit resets
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================================================
+  # SCHEMAS
+  # ============================================================================
+  schemas:
+    # --------------------------------------------------------------------------
+    # Common Schemas
+    # --------------------------------------------------------------------------
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+            path:
+              type: string
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    ResponseMeta:
+      type: object
+      required:
+        - timestamp
+        - requestId
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        requestId:
+          type: string
+
+    CursorPagination:
+      type: object
+      required:
+        - hasMore
+        - limit
+      properties:
+        cursor:
+          type: string
+          nullable: true
+        hasMore:
+          type: boolean
+        limit:
+          type: integer
+
+    OffsetPagination:
+      type: object
+      required:
+        - offset
+        - limit
+        - total
+        - hasMore
+      properties:
+        offset:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        hasMore:
+          type: boolean
+
+    # --------------------------------------------------------------------------
+    # Image Schemas
+    # --------------------------------------------------------------------------
+    ImageBasic:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        fileUrl:
+          type: string
+        thumbnailUrl:
+          type: string
+          nullable: true
+        width:
+          type: integer
+        height:
+          type: integer
+
+    ImageWithMetadata:
+      allOf:
+        - $ref: '#/components/schemas/ImageBasic'
+        - type: object
+          properties:
+            takenAt:
+              type: string
+              format: date-time
+              nullable: true
+            uploadedAt:
+              type: string
+              format: date-time
+            isFavorite:
+              type: boolean
+            album:
+              type: object
+              nullable: true
+              properties:
+                id:
+                  type: string
+                title:
+                  type: string
+
+    ExifData:
+      type: object
+      properties:
+        camera:
+          type: object
+          nullable: true
+          properties:
+            make:
+              type: string
+              nullable: true
+            model:
+              type: string
+              nullable: true
+            serial:
+              type: string
+              nullable: true
+        lens:
+          type: object
+          nullable: true
+          properties:
+            make:
+              type: string
+              nullable: true
+            model:
+              type: string
+              nullable: true
+            focalLength:
+              type: number
+              nullable: true
+            focalLength35mm:
+              type: number
+              nullable: true
+        exposure:
+          type: object
+          nullable: true
+          properties:
+            iso:
+              type: integer
+              nullable: true
+            aperture:
+              type: number
+              nullable: true
+            apertureFormatted:
+              type: string
+              nullable: true
+            shutterSpeed:
+              type: number
+              nullable: true
+            shutterSpeedFormatted:
+              type: string
+              nullable: true
+            exposureMode:
+              type: string
+              nullable: true
+            meteringMode:
+              type: string
+              nullable: true
+        flash:
+          type: object
+          nullable: true
+          properties:
+            fired:
+              type: boolean
+            mode:
+              type: string
+        location:
+          type: object
+          nullable: true
+          properties:
+            latitude:
+              type: number
+              nullable: true
+            longitude:
+              type: number
+              nullable: true
+            altitude:
+              type: number
+              nullable: true
+            formatted:
+              type: string
+              nullable: true
+
+    ImageDetailResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          allOf:
+            - $ref: '#/components/schemas/ImageWithMetadata'
+            - type: object
+              properties:
+                originalName:
+                  type: string
+                fileSize:
+                  type: integer
+                mimeType:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+                favoritedAt:
+                  type: string
+                  format: date-time
+                  nullable: true
+                updatedAt:
+                  type: string
+                  format: date-time
+                tags:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Tag'
+                exif:
+                  $ref: '#/components/schemas/ExifData'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    # --------------------------------------------------------------------------
+    # Timeline Schemas
+    # --------------------------------------------------------------------------
+    TimelineGroup:
+      type: object
+      properties:
+        date:
+          type: string
+        count:
+          type: integer
+        startIndex:
+          type: integer
+
+    TimelineResponse:
+      type: object
+      required:
+        - success
+        - data
+        - pagination
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/ImageWithMetadata'
+            groups:
+              type: array
+              items:
+                $ref: '#/components/schemas/TimelineGroup'
+        pagination:
+          $ref: '#/components/schemas/CursorPagination'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    # --------------------------------------------------------------------------
+    # Favorites Schemas
+    # --------------------------------------------------------------------------
+    FavoriteToggleResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            isFavorite:
+              type: boolean
+            favoritedAt:
+              type: string
+              format: date-time
+              nullable: true
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    FavoritesResponse:
+      type: object
+      required:
+        - success
+        - data
+        - pagination
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/ImageWithMetadata'
+            totalFavorites:
+              type: integer
+        pagination:
+          $ref: '#/components/schemas/CursorPagination'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    # --------------------------------------------------------------------------
+    # Search Schemas
+    # --------------------------------------------------------------------------
+    SearchFacets:
+      type: object
+      properties:
+        cameras:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              count:
+                type: integer
+        albums:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              count:
+                type: integer
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              count:
+                type: integer
+        years:
+          type: array
+          items:
+            type: object
+            properties:
+              year:
+                type: integer
+              count:
+                type: integer
+
+    SearchResponse:
+      type: object
+      required:
+        - success
+        - data
+        - pagination
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/ImageWithMetadata'
+            facets:
+              $ref: '#/components/schemas/SearchFacets'
+        pagination:
+          $ref: '#/components/schemas/OffsetPagination'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    # --------------------------------------------------------------------------
+    # Smart Album Schemas
+    # --------------------------------------------------------------------------
+    SmartAlbumCondition:
+      type: object
+      required:
+        - field
+        - operator
+        - value
+      properties:
+        field:
+          type: string
+          enum:
+            - takenAt
+            - uploadedAt
+            - albumId
+            - tags
+            - camera
+            - lens
+            - iso
+            - aperture
+            - orientation
+            - isFavorite
+            - width
+            - height
+            - fileSize
+        operator:
+          type: string
+          enum:
+            - equals
+            - notEquals
+            - contains
+            - notContains
+            - greaterThan
+            - lessThan
+            - between
+            - in
+            - notIn
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: array
+              items:
+                type: string
+
+    SmartAlbumRules:
+      type: object
+      required:
+        - operator
+        - conditions
+      properties:
+        operator:
+          type: string
+          enum: [AND, OR]
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SmartAlbumCondition'
+          minItems: 1
+
+    SmartAlbum:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        coverUrl:
+          type: string
+          nullable: true
+        imageCount:
+          type: integer
+        rules:
+          $ref: '#/components/schemas/SmartAlbumRules'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateSmartAlbumRequest:
+      type: object
+      required:
+        - title
+        - rules
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        rules:
+          $ref: '#/components/schemas/SmartAlbumRules'
+
+    UpdateSmartAlbumRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        rules:
+          $ref: '#/components/schemas/SmartAlbumRules'
+
+    SmartAlbumResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          $ref: '#/components/schemas/SmartAlbum'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    SmartAlbumsListResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SmartAlbum'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    SmartAlbumImagesResponse:
+      type: object
+      required:
+        - success
+        - data
+        - pagination
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            smartAlbum:
+              type: object
+              properties:
+                id:
+                  type: string
+                title:
+                  type: string
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/ImageWithMetadata'
+            matchedCount:
+              type: integer
+        pagination:
+          $ref: '#/components/schemas/CursorPagination'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    # --------------------------------------------------------------------------
+    # Tag Schemas
+    # --------------------------------------------------------------------------
+    Tag:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          enum: [general, location, event, person, object, scene, emotion, color, custom]
+        imageCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateTagRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        category:
+          type: string
+          enum: [general, location, event, person, object, scene, emotion, color, custom]
+          default: general
+
+    TagResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          $ref: '#/components/schemas/Tag'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    TagsListResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    AddTagsByIdRequest:
+      type: object
+      required:
+        - tagIds
+      properties:
+        tagIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+
+    AddTagsByNameRequest:
+      type: object
+      required:
+        - tagNames
+      properties:
+        tagNames:
+          type: array
+          items:
+            type: string
+          minItems: 1
+
+    ImageTagsResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            imageId:
+              type: string
+            tags:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tag'
+            addedTags:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tag'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    ImageTagsRemovedResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            imageId:
+              type: string
+            removedTagId:
+              type: string
+            remainingTags:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tag'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    # --------------------------------------------------------------------------
+    # Upload Schemas
+    # --------------------------------------------------------------------------
+    UploadedImage:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        originalName:
+          type: string
+        fileUrl:
+          type: string
+        thumbnailUrl:
+          type: string
+          nullable: true
+        width:
+          type: integer
+        height:
+          type: integer
+        fileSize:
+          type: integer
+        mimeType:
+          type: string
+        exifExtracted:
+          type: boolean
+        thumbnailGenerated:
+          type: boolean
+        takenAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    UploadFailed:
+      type: object
+      properties:
+        filename:
+          type: string
+        error:
+          type: string
+
+    UploadResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            uploaded:
+              type: array
+              items:
+                $ref: '#/components/schemas/UploadedImage'
+            failed:
+              type: array
+              items:
+                $ref: '#/components/schemas/UploadFailed'
+            summary:
+              type: object
+              properties:
+                total:
+                  type: integer
+                successful:
+                  type: integer
+                failed:
+                  type: integer
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    # --------------------------------------------------------------------------
+    # Album Schemas
+    # --------------------------------------------------------------------------
+    Album:
+      type: object
+      properties:
+        id:
+          type: string
+        year:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        subAlbum:
+          type: string
+          nullable: true
+        coverImageUrl:
+          type: string
+          nullable: true
+        imageCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateAlbumRequest:
+      type: object
+      required:
+        - year
+        - title
+      properties:
+        year:
+          type: integer
+          minimum: 1900
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 1000
+        subAlbum:
+          type: string
+          maxLength: 100
+
+    AlbumResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          $ref: '#/components/schemas/Album'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    AlbumsListResponse:
+      type: object
+      required:
+        - success
+        - data
+        - meta
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Album'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    UpdateImageRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          maxLength: 2000
+        takenAt:
+          type: string
+          format: date-time
