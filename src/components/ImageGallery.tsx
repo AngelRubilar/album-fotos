@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, memo } from 'react';
 import Image from 'next/image';
-import { useTheme } from '@/contexts/ThemeContext';
 
 interface ImageData {
   id: string;
@@ -19,152 +18,82 @@ interface ImageGalleryProps {
   onImageChange?: (index: number) => void;
 }
 
-const ImageGallery = memo(function ImageGallery({ 
-  images, 
-  currentIndex, 
-  isOpen, 
-  onClose, 
-  onImageChange 
-}: ImageGalleryProps) {
-  const { currentTheme } = useTheme();
-  const [currentImageIndex, setCurrentImageIndex] = useState(currentIndex);
-  const [imageLoading, setImageLoading] = useState(true);
+const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, onClose, onImageChange }: ImageGalleryProps) {
+  const [idx, setIdx] = useState(currentIndex);
+  const [loading, setLoading] = useState(true);
 
-  // Actualizar el índice cuando cambie desde el componente padre
+  useEffect(() => { setIdx(currentIndex); }, [currentIndex]);
+
+  const go = useCallback((dir: -1 | 1) => {
+    const next = dir === -1
+      ? (idx > 0 ? idx - 1 : images.length - 1)
+      : (idx < images.length - 1 ? idx + 1 : 0);
+    setIdx(next);
+    onImageChange?.(next);
+    setLoading(true);
+  }, [idx, images.length, onImageChange]);
+
   useEffect(() => {
-    setCurrentImageIndex(currentIndex);
-  }, [currentIndex]);
-
-  // Funciones de navegación
-  const goToPrevious = useCallback(() => {
-    const newIndex = currentImageIndex > 0 ? currentImageIndex - 1 : images.length - 1;
-    setCurrentImageIndex(newIndex);
-    onImageChange?.(newIndex);
-    setImageLoading(true);
-  }, [currentImageIndex, images.length, onImageChange]);
-
-  const goToNext = useCallback(() => {
-    const newIndex = currentImageIndex < images.length - 1 ? currentImageIndex + 1 : 0;
-    setCurrentImageIndex(newIndex);
-    onImageChange?.(newIndex);
-    setImageLoading(true);
-  }, [currentImageIndex, images.length, onImageChange]);
-
-  // Navegación con teclado
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (!isOpen) return;
-
-    switch (event.key) {
-      case 'Escape':
-        onClose();
-        break;
-      case 'ArrowLeft':
-        goToPrevious();
-        break;
-      case 'ArrowRight':
-        goToNext();
-        break;
-    }
-  }, [isOpen, onClose, goToPrevious, goToNext]);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden'; // Prevenir scroll del body
-    }
-
-    // Cleanup: limpiar event listeners y restaurar scroll
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') go(-1);
+      if (e.key === 'ArrowRight') go(1);
     };
-  }, [isOpen, handleKeyDown]);
+    document.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handler);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, onClose, go]);
 
-  const handleImageLoad = useCallback(() => {
-    setImageLoading(false);
-  }, []);
+  if (!isOpen || !images.length) return null;
 
-  if (!isOpen || images.length === 0) {
-    return null;
-  }
-
-  const currentImage = images[currentImageIndex];
+  const img = images[idx];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay de fondo */}
-      <div 
-        className="absolute inset-0 bg-black/90 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      {/* Modal de la galería */}
-      <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
-        {/* Header con controles */}
-        <div className="absolute top-0 left-0 right-0 z-10 p-4 flex justify-between items-center">
-          {/* Información de la imagen */}
-          <div className="text-white">
-            <h3 className="text-lg font-semibold">
-              {currentImage.originalName}
-            </h3>
-            <p className="text-sm text-gray-300">
-              {currentImageIndex + 1} de {images.length}
-            </p>
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-2xl" onClick={onClose} />
+
+      <div className="relative w-full h-full flex flex-col">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-5 py-4 relative z-10">
+          <div>
+            <p className="text-white text-sm font-medium truncate max-w-[280px]">{img.originalName}</p>
+            <p className="text-white/40 text-xs">{idx + 1} / {images.length}</p>
           </div>
-          
-          {/* Botón de cerrar */}
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all duration-200"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Imagen principal */}
-        <div className="relative w-full h-full flex items-center justify-center max-w-7xl max-h-[80vh]">
-          {/* Indicador de carga */}
-          {imageLoading && (
+        {/* Image */}
+        <div className="flex-1 relative flex items-center justify-center px-16">
+          {loading && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-white/30" />
             </div>
           )}
-          
-          {/* Imagen */}
-          <div className="relative w-full h-full flex items-center justify-center">
-            <Image
-              src={currentImage.fileUrl}
-              alt={currentImage.originalName}
-              width={1200}
-              height={800}
-              className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
-                imageLoading ? 'opacity-0' : 'opacity-100'
-              }`}
-              onLoad={handleImageLoad}
-              priority
-            />
-          </div>
-
-          {/* Botones de navegación */}
+          <Image
+            src={img.fileUrl}
+            alt={img.originalName}
+            width={1400}
+            height={900}
+            className={`max-w-full max-h-[75vh] object-contain transition-opacity duration-200 ${loading ? 'opacity-0' : 'opacity-100'}`}
+            onLoad={() => setLoading(false)}
+            priority
+          />
           {images.length > 1 && (
             <>
-              {/* Botón anterior */}
-              <button
-                onClick={goToPrevious}
-                className="absolute left-4 p-3 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all duration-200 z-10"
-              >
+              <button onClick={() => go(-1)} className="absolute left-4 p-3 rounded-2xl hover:bg-white/10 transition-colors text-white/50 hover:text-white">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-
-              {/* Botón siguiente */}
-              <button
-                onClick={goToNext}
-                className="absolute right-4 p-3 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all duration-200 z-10"
-              >
+              <button onClick={() => go(1)} className="absolute right-4 p-3 rounded-2xl hover:bg-white/10 transition-colors text-white/50 hover:text-white">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -173,57 +102,29 @@ const ImageGallery = memo(function ImageGallery({
           )}
         </div>
 
-        {/* Footer con descripción y miniaturas */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
-          {/* Descripción */}
-          {currentImage.description && (
-            <div className="text-center mb-4">
-              <p className="text-white text-sm max-w-2xl mx-auto">
-                {currentImage.description}
-              </p>
-            </div>
-          )}
-
-          {/* Miniaturas */}
+        {/* Bottom */}
+        <div className="px-5 py-4 relative z-10">
+          {img.description && <p className="text-center text-white/70 text-sm mb-3">{img.description}</p>}
           {images.length > 1 && (
-            <div className="flex justify-center space-x-2 overflow-x-auto pb-2">
-              {images.map((image, index) => (
+            <div className="flex justify-center gap-1.5 overflow-x-auto thumbnail-scroll py-1 max-w-2xl mx-auto">
+              {images.map((image, i) => (
                 <button
                   key={image.id}
-                  onClick={() => {
-                    setCurrentImageIndex(index);
-                    onImageChange?.(index);
-                    setImageLoading(true);
-                  }}
-                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
-                    index === currentImageIndex 
-                      ? 'border-white scale-110' 
-                      : 'border-transparent hover:border-gray-400'
+                  onClick={() => { setIdx(i); onImageChange?.(i); setLoading(true); }}
+                  className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all duration-200 ${
+                    i === idx ? 'ring-2 ring-white scale-110' : 'opacity-40 hover:opacity-70'
                   }`}
                 >
-                  <Image
-                    src={image.fileUrl}
-                    alt={`Miniatura ${index + 1}`}
-                    width={64}
-                    height={64}
-                    className="w-full h-full object-cover"
-                  />
+                  <Image src={image.fileUrl} alt="" width={48} height={48} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
           )}
+          {images.length > 1 && <p className="text-center text-white/20 text-xs mt-2">← → navegar · ESC cerrar</p>}
         </div>
-
-        {/* Instrucciones de navegación */}
-        {images.length > 1 && (
-          <div className="absolute bottom-4 right-4 text-white text-xs opacity-70">
-            <p>← → para navegar • ESC para cerrar</p>
-          </div>
-        )}
       </div>
     </div>
   );
 });
 
 export default ImageGallery;
-

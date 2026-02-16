@@ -4,254 +4,93 @@ import Image from 'next/image';
 import { useState, useEffect, memo } from 'react';
 
 interface AlbumPreviewProps {
-  albumId: string;
-  imageCount: number;
+  albumId?: string;
+  year?: number;
+  imageCount?: number;
   className?: string;
 }
 
-const AlbumPreview = memo(function AlbumPreview({ albumId, imageCount, className = '' }: AlbumPreviewProps) {
+const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, className = '' }: AlbumPreviewProps) {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchPreviewImages = async () => {
+    const fetchImages = async () => {
       try {
-        const response = await fetch(`/api/albums/${albumId}/images`);
-        const data = await response.json();
-
-        if (!isMounted) return;
-
-        if (data.success && data.data.images.length > 0) {
-          // Tomar las primeras 4 imágenes para la previsualización
-          // Priorizar thumbnails WebP optimizados para mejor rendimiento
-          const images = data.data.images.slice(0, 4).map((img: any) => {
-            // Prioridad 1: Thumbnail WebP (optimizado, 400x400, ~10-20KB)
-            if (img.thumbnailUrl && img.thumbnailUrl.includes('.webp')) {
-              return img.thumbnailUrl;
+        if (albumId) {
+          const res = await fetch(`/api/albums/${albumId}/images`);
+          const data = await res.json();
+          if (!isMounted) return;
+          if (data.success && data.data?.images) {
+            const imgs = data.data.images.slice(0, 4).map((img: any) =>
+              img.thumbnailUrl?.includes('.webp') ? img.thumbnailUrl : (img.thumbnailUrl || img.fileUrl)
+            ).filter(Boolean);
+            setPreviewImages(imgs);
+          }
+        } else if (year) {
+          const res = await fetch(`/api/albums/year/${year}`);
+          const data = await res.json();
+          if (!isMounted) return;
+          if (data.success && data.data) {
+            const imgs: string[] = [];
+            for (const album of data.data.slice(0, 4)) {
+              try {
+                const aRes = await fetch(`/api/albums/${album.id}/images`);
+                const aData = await aRes.json();
+                if (!isMounted) return;
+                if (aData.success && aData.data.images.length > 0) {
+                  const img = aData.data.images[0];
+                  const src = img.thumbnailUrl?.includes('.webp') ? img.thumbnailUrl : (img.thumbnailUrl || img.fileUrl);
+                  if (src) imgs.push(src);
+                }
+              } catch { /* skip */ }
             }
-            // Prioridad 2: Cualquier thumbnail válido
-            else if (img.thumbnailUrl && !img.thumbnailUrl.includes('placeholder')) {
-              return img.thumbnailUrl;
-            }
-            // Prioridad 3: Imagen original (más pesada)
-            else if (img.fileUrl && !img.fileUrl.includes('placeholder')) {
-              return img.fileUrl;
-            }
-            // Fallback: Placeholder colorido
-            else {
-              const colors = ['bg-gradient-to-br from-blue-400 to-blue-600', 'bg-gradient-to-br from-green-400 to-green-600', 'bg-gradient-to-br from-purple-400 to-purple-600', 'bg-gradient-to-br from-pink-400 to-pink-600', 'bg-gradient-to-br from-orange-400 to-orange-600'];
-              const colorIndex = Math.abs(img.albumId.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % colors.length;
-              return colors[colorIndex];
-            }
-          });
-          setPreviewImages(images);
+            setPreviewImages(imgs);
+          }
         }
-      } catch (error) {
-        console.error('Error fetching preview images:', error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
+      } catch { /* skip */ }
+      finally { if (isMounted) setLoading(false); }
     };
 
-    if (imageCount > 0) {
-      fetchPreviewImages();
-    } else {
-      setLoading(false);
-    }
-
-    // Cleanup para evitar memory leaks
-    return () => {
-      isMounted = false;
-    };
-  }, [albumId, imageCount]);
+    fetchImages();
+    return () => { isMounted = false; };
+  }, [albumId, year, imageCount]);
 
   if (loading) {
-    return (
-      <div className={`aspect-[4/3] bg-gray-200 rounded-lg animate-pulse flex items-center justify-center ${className}`}>
-        <div className="text-gray-400">📸</div>
-      </div>
-    );
+    return <div className={`bg-gray-200 dark:bg-neutral-800 animate-pulse ${className}`} />;
   }
 
   if (previewImages.length === 0) {
     return (
-      <div className={`aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center ${className}`}>
-        <div className="text-center">
-          <div className="text-4xl mb-2">📷</div>
-          <div className="text-sm text-gray-500">Sin fotos</div>
-        </div>
+      <div className={`bg-gray-100 dark:bg-neutral-800 flex items-center justify-center ${className}`}>
+        <svg className="w-10 h-10 text-gray-300 dark:text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
       </div>
     );
   }
 
   if (previewImages.length === 1) {
-    const isRealImage = previewImages[0].startsWith('/') && !previewImages[0].includes('bg-gradient');
-    
-    if (isRealImage) {
-      return (
-        <div className={`aspect-[4/3] relative rounded-lg overflow-hidden ${className}`}>
-          <Image
-            src={previewImages[0]}
-            alt="Vista previa del álbum"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-          />
-        </div>
-      );
-    } else {
-      return (
-        <div className={`aspect-[4/3] relative rounded-lg overflow-hidden ${previewImages[0]} ${className}`}>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-white text-2xl">📸</div>
-          </div>
-        </div>
-      );
-    }
-  }
-
-  if (previewImages.length === 2) {
     return (
-      <div className={`aspect-[4/3] grid grid-cols-2 gap-1 rounded-lg overflow-hidden ${className}`}>
-        {previewImages.map((image, index) => {
-          const isRealImage = image.startsWith('/') && !image.includes('bg-gradient');
-          
-          if (isRealImage) {
-            return (
-              <div key={index} className="relative">
-                <Image
-                  src={image}
-                  alt={`Vista previa ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 12vw"
-                />
-              </div>
-            );
-          } else {
-            return (
-              <div key={index} className={`relative ${image}`}>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-white text-lg">📸</div>
-                </div>
-              </div>
-            );
-          }
-        })}
+      <div className={`relative overflow-hidden ${className}`}>
+        <Image src={previewImages[0]} alt="Preview" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
       </div>
     );
   }
 
-  if (previewImages.length === 3) {
-    return (
-      <div className={`aspect-[4/3] grid grid-cols-2 gap-1 rounded-lg overflow-hidden ${className}`}>
-        <div className={`relative row-span-2 ${previewImages[0].startsWith('/') && !previewImages[0].includes('bg-gradient') ? '' : previewImages[0]}`}>
-          {previewImages[0].startsWith('/') && !previewImages[0].includes('bg-gradient') ? (
-            <Image
-              src={previewImages[0]}
-              alt="Vista previa 1"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 12vw"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-white text-xl">📸</div>
-            </div>
-          )}
-        </div>
-        <div className={`relative ${previewImages[1].startsWith('/') && !previewImages[1].includes('bg-gradient') ? '' : previewImages[1]}`}>
-          {previewImages[1].startsWith('/') && !previewImages[1].includes('bg-gradient') ? (
-            <Image
-              src={previewImages[1]}
-              alt="Vista previa 2"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 12vw"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-white text-lg">📸</div>
-            </div>
-          )}
-        </div>
-        <div className={`relative ${previewImages[2].startsWith('/') && !previewImages[2].includes('bg-gradient') ? '' : previewImages[2]}`}>
-          {previewImages[2].startsWith('/') && !previewImages[2].includes('bg-gradient') ? (
-            <Image
-              src={previewImages[2]}
-              alt="Vista previa 3"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 12vw"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-white text-lg">📸</div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // 4 o más imágenes
   return (
-    <div className={`aspect-[4/3] grid grid-cols-2 gap-1 rounded-lg overflow-hidden ${className}`}>
-      <div className={`relative row-span-2 ${previewImages[0].startsWith('/') && !previewImages[0].includes('bg-gradient') ? '' : previewImages[0]}`}>
-        {previewImages[0].startsWith('/') && !previewImages[0].includes('bg-gradient') ? (
-          <Image
-            src={previewImages[0]}
-            alt="Vista previa 1"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 12vw"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-white text-xl">📸</div>
+    <div className={`relative overflow-hidden ${className}`}>
+      <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-[2px]">
+        {previewImages.slice(0, 4).map((src, i) => (
+          <div key={i} className="relative overflow-hidden">
+            <Image src={src} alt="" fill className="object-cover" sizes="25vw" />
           </div>
-        )}
-      </div>
-      <div className={`relative ${previewImages[1].startsWith('/') && !previewImages[1].includes('bg-gradient') ? '' : previewImages[1]}`}>
-        {previewImages[1].startsWith('/') && !previewImages[1].includes('bg-gradient') ? (
-          <Image
-            src={previewImages[1]}
-            alt="Vista previa 2"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 12vw"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-white text-lg">📸</div>
-          </div>
-        )}
-      </div>
-      <div className={`relative ${previewImages[2].startsWith('/') && !previewImages[2].includes('bg-gradient') ? '' : previewImages[2]}`}>
-        {previewImages[2].startsWith('/') && !previewImages[2].includes('bg-gradient') ? (
-          <Image
-            src={previewImages[2]}
-            alt="Vista previa 3"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 12vw"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-white text-lg">📸</div>
-          </div>
-        )}
-        {previewImages.length > 3 && (
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">
-              +{previewImages.length - 3}
-            </span>
-          </div>
-        )}
+        ))}
+        {previewImages.length < 4 && Array.from({ length: 4 - previewImages.length }).map((_, i) => (
+          <div key={`p-${i}`} className="bg-gray-200 dark:bg-neutral-800" />
+        ))}
       </div>
     </div>
   );

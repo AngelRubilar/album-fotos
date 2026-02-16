@@ -3,369 +3,151 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
-import ThemeSelector from "@/components/ThemeSelector";
 
 interface Album {
   id: string;
   year: number;
   title: string;
   description: string;
+  subAlbum?: string;
   imageCount: number;
   createdAt: string;
 }
 
 export default function AdminPage() {
-  const { currentTheme } = useTheme();
+  const { t } = useTheme();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newAlbum, setNewAlbum] = useState({
-    year: new Date().getFullYear(),
-    title: '',
-    description: '',
-    subAlbum: ''
-  });
+  const [showForm, setShowForm] = useState(false);
+  const [newAlbum, setNewAlbum] = useState({ year: new Date().getFullYear(), title: '', description: '', subAlbum: '' });
 
-  // Cargar álbumes
   useEffect(() => {
-    const fetchAlbums = async () => {
-      try {
-        const response = await fetch('/api/albums');
-        const data = await response.json();
-        if (data.success) {
-          setAlbums(data.data);
-        }
-      } catch (error) {
-        console.error('Error fetching albums:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAlbums();
+    fetch('/api/albums')
+      .then(r => r.json())
+      .then(d => { if (d.success) setAlbums(d.data); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  // Crear nuevo álbum
-  const handleCreateAlbum = async () => {
-    if (!newAlbum.title.trim()) {
-      alert('El título es requerido');
-      return;
-    }
-
+  const createAlbum = async () => {
+    if (!newAlbum.title.trim()) { alert('El titulo es requerido'); return; }
     try {
-      const response = await fetch('/api/albums', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newAlbum),
-      });
-
-      const data = await response.json();
-      
+      const res = await fetch('/api/albums', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAlbum) });
+      const data = await res.json();
       if (data.success) {
         setAlbums(prev => [...prev, data.data]);
         setNewAlbum({ year: new Date().getFullYear(), title: '', description: '', subAlbum: '' });
-        setShowCreateForm(false);
-      } else {
-        alert(data.error || 'Error al crear álbum');
-      }
-    } catch (error) {
-      console.error('Error creating album:', error);
-      alert('Error al crear álbum');
-    }
+        setShowForm(false);
+      } else { alert(data.error || 'Error'); }
+    } catch { alert('Error al crear album'); }
   };
 
-  // Eliminar álbum
-  const handleDeleteAlbum = async (id: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este álbum?')) {
-      return;
-    }
-
+  const deleteAlbum = async (id: string) => {
+    if (!confirm('Eliminar este album y todas sus fotos?')) return;
     try {
-      const response = await fetch(`/api/albums/${id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setAlbums(prev => prev.filter(album => album.id !== id));
-      } else {
-        alert(data.error || 'Error al eliminar álbum');
-      }
-    } catch (error) {
-      console.error('Error deleting album:', error);
-      alert('Error al eliminar álbum');
-    }
+      const res = await fetch(`/api/albums/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) setAlbums(prev => prev.filter(a => a.id !== id));
+      else alert(data.error || 'Error');
+    } catch { alert('Error al eliminar'); }
   };
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${
-        currentTheme === 'ocean' ? 'bg-gradient-to-br from-cyan-50 to-blue-100' :
-        currentTheme === 'sunset' ? 'bg-gradient-to-br from-orange-50 to-red-100' :
-        currentTheme === 'forest' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
-        currentTheme === 'cosmic' ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900' :
-        currentTheme === 'dark' ? 'bg-gray-900' :
-        'bg-gray-50'
-      }`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className={`transition-colors duration-300 ${
-            currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-gray-300' : 'text-gray-600'
-          }`}>Cargando álbumes...</p>
-        </div>
+      <div className={`min-h-screen flex items-center justify-center ${t.bg}`}>
+        <div className={`animate-spin rounded-full h-8 w-8 border-2 border-t-transparent ${t.border}`} />
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${
-      currentTheme === 'ocean' ? 'bg-gradient-to-br from-cyan-50 to-blue-100' :
-      currentTheme === 'sunset' ? 'bg-gradient-to-br from-orange-50 to-red-100' :
-      currentTheme === 'forest' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
-      currentTheme === 'cosmic' ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900' :
-      currentTheme === 'dark' ? 'bg-gray-900' :
-      'bg-gray-50'
-    }`}>
-      {/* Header */}
-      <header className={`shadow-sm border-b transition-all duration-300 ${
-        currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' :
-        currentTheme === 'cosmic' ? 'bg-purple-800/80 border-purple-600' :
-        currentTheme === 'ocean' ? 'bg-white/80 border-cyan-200' :
-        currentTheme === 'sunset' ? 'bg-white/80 border-orange-200' :
-        currentTheme === 'forest' ? 'bg-white/80 border-green-200' :
-        'bg-white border-gray-200'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className={`flex items-center transition-colors duration-300 ${
-                currentTheme === 'dark' || currentTheme === 'cosmic' ? 
-                'text-gray-300 hover:text-white' : 
-                'text-gray-600 hover:text-gray-900'
-              }`}>
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Volver
-              </Link>
-              <div className={`h-6 w-px transition-colors duration-300 ${
-                currentTheme === 'dark' ? 'bg-gray-600' :
-                currentTheme === 'cosmic' ? 'bg-purple-400' :
-                'bg-gray-300'
-              }`} />
-              <h1 className={`text-xl font-semibold transition-colors duration-300 ${
-                currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-white' : 'text-gray-900'
-              }`}>
-                Administrar Álbumes
-              </h1>
-            </div>
-            {/* Selector de tema */}
-            <div className="absolute top-6 right-6">
-              <ThemeSelector />
-            </div>
+    <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="mb-8 md:ml-0 ml-10">
+          <nav className={`flex items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
+            <Link href="/" className="hover:underline">Inicio</Link>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className={t.text}>Administrar</span>
+          </nav>
+          <div className="flex items-center justify-between">
+            <h1 className={`text-2xl font-bold ${t.text}`}>Administrar Albumes</h1>
+            <button onClick={() => setShowForm(!showForm)} className={`px-4 py-2 rounded-xl text-sm font-medium text-white ${t.accentBg} hover:opacity-90 transition-opacity`}>
+              {showForm ? 'Cancelar' : 'Crear Album'}
+            </button>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumbs */}
-        <nav className="mb-8 text-sm font-medium text-gray-500">
-          <ol className="list-none p-0 inline-flex">
-            <li className="flex items-center">
-              <Link href="/" className="text-blue-600 hover:underline">
-                Álbumes
-              </Link>
-              <svg className="fill-current w-3 h-3 mx-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
-                <path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.488 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z"/>
-              </svg>
-            </li>
-            <li>
-              <span>Administrar</span>
-            </li>
-          </ol>
-        </nav>
-
-        <div className="space-y-8">
-          {/* Panel de Administración */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Gestión de Álbumes
-              </h2>
-              <button
-                onClick={() => setShowCreateForm(!showCreateForm)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Crear Nuevo Álbum
-              </button>
-            </div>
-
-            {/* Formulario de Creación */}
-            {showCreateForm && (
-              <div className="border-t border-gray-200 pt-6 mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Crear Nuevo Álbum
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Año
-                    </label>
-                    <input
-                      type="number"
-                      value={newAlbum.year}
-                      onChange={(e) => setNewAlbum(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      min="1900"
-                      max="2100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Título
-                    </label>
-                    <input
-                      type="text"
-                      value={newAlbum.title}
-                      onChange={(e) => setNewAlbum(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Ej: Vacaciones de Verano"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Categoría (Subálbum)
-                    </label>
-                    <input
-                      type="text"
-                      value={newAlbum.subAlbum}
-                      onChange={(e) => setNewAlbum(prev => ({ ...prev, subAlbum: e.target.value }))}
-                      placeholder="Ej: Vacaciones, Eventos, Viajes"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Descripción
-                    </label>
-                    <input
-                      type="text"
-                      value={newAlbum.description}
-                      onChange={(e) => setNewAlbum(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Descripción opcional"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-4 mt-4">
-                  <button
-                    onClick={() => setShowCreateForm(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleCreateAlbum}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    Crear Álbum
-                  </button>
-                </div>
+        {showForm && (
+          <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-6 mb-6`}>
+            <h3 className={`font-semibold ${t.text} mb-4`}>Nuevo Album</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm ${t.textMuted} mb-1`}>Ano</label>
+                <input type="number" value={newAlbum.year} onChange={e => setNewAlbum(prev => ({ ...prev, year: parseInt(e.target.value) }))} className={`w-full px-3 py-2.5 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-blue-500 focus:outline-none`} />
               </div>
-            )}
-
-            {/* Lista de Álbumes */}
-            <div className="space-y-4">
-              {albums.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">📁</div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    No hay álbumes creados
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Crea tu primer álbum para empezar a organizar tus fotos.
-                  </p>
-                  <button
-                    onClick={() => setShowCreateForm(true)}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Crear Primer Álbum
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {albums.map((album) => (
-                    <div key={album.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {album.title}
-                            </h3>
-                            {(album as any).subAlbum && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                {(album as any).subAlbum}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600">
-                            Año {album.year}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteAlbum(album.id)}
-                          className="text-red-600 hover:text-red-700 transition-colors"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                      
-                      {album.description && (
-                        <p className="text-sm text-gray-600 mb-3">
-                          {album.description}
-                        </p>
-                      )}
-                      
-                      <div className="flex justify-between items-center text-sm text-gray-500">
-                        <span>{album.imageCount} fotos</span>
-                        <span>{new Date(album.createdAt).toLocaleDateString()}</span>
-                      </div>
-                      
-                      <div className="mt-4">
-                        <Link href={`/album/${album.year}`}>
-                          <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            Ver Álbum
-                          </button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div>
+                <label className={`block text-sm ${t.textMuted} mb-1`}>Titulo</label>
+                <input type="text" value={newAlbum.title} onChange={e => setNewAlbum(prev => ({ ...prev, title: e.target.value }))} placeholder="Ej: Vacaciones" className={`w-full px-3 py-2.5 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-blue-500 focus:outline-none`} />
+              </div>
+              <div>
+                <label className={`block text-sm ${t.textMuted} mb-1`}>Categoria</label>
+                <input type="text" value={newAlbum.subAlbum} onChange={e => setNewAlbum(prev => ({ ...prev, subAlbum: e.target.value }))} placeholder="Ej: Viajes" className={`w-full px-3 py-2.5 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-blue-500 focus:outline-none`} />
+              </div>
+              <div>
+                <label className={`block text-sm ${t.textMuted} mb-1`}>Descripcion</label>
+                <input type="text" value={newAlbum.description} onChange={e => setNewAlbum(prev => ({ ...prev, description: e.target.value }))} placeholder="Opcional" className={`w-full px-3 py-2.5 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-blue-500 focus:outline-none`} />
+              </div>
+            </div>
+            <div className="flex justify-end mt-4">
+              <button onClick={createAlbum} className="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors">Crear</button>
             </div>
           </div>
-        </div>
-      </main>
+        )}
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center">
-            <p className="text-sm font-semibold text-gray-600 mb-2">
-              © 2024 Álbum de Fotos - Creado con Next.js y Tailwind CSS
-            </p>
-            <p className="text-xs text-gray-500">
-              Organiza tus recuerdos de manera inteligente
-            </p>
+        {albums.length === 0 ? (
+          <div className="text-center py-20">
+            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl ${t.cardBg} ${t.cardBorder} mb-5`}>
+              <svg className={`w-8 h-8 ${t.textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            </div>
+            <h3 className={`text-lg font-semibold ${t.text} mb-2`}>Sin albumes</h3>
+            <p className={`${t.textMuted} mb-5`}>Crea tu primer album para empezar.</p>
+            <button onClick={() => setShowForm(true)} className={`px-5 py-2 rounded-xl text-white font-medium ${t.accentBg}`}>Crear Album</button>
           </div>
-        </div>
-      </footer>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {albums.map(album => (
+              <div key={album.id} className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-5`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className={`font-semibold ${t.text}`}>{album.title}</h3>
+                      {album.subAlbum && <span className={`text-xs px-2 py-0.5 rounded-full ${t.inputBg} ${t.textMuted}`}>{album.subAlbum}</span>}
+                    </div>
+                    <p className={`text-sm ${t.textMuted}`}>Ano {album.year}</p>
+                  </div>
+                  <button onClick={() => deleteAlbum(album.id)} className={t.danger}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+                {album.description && <p className={`text-sm ${t.textMuted} mb-3`}>{album.description}</p>}
+                <div className={`flex items-center justify-between text-sm ${t.textMuted} mb-4`}>
+                  <span>{album.imageCount} fotos</span>
+                  <span>{new Date(album.createdAt).toLocaleDateString()}</span>
+                </div>
+                <Link href={`/album/${album.year}`}>
+                  <button className={`w-full px-4 py-2 rounded-xl text-sm font-medium text-white ${t.accentBg} hover:opacity-90 transition-opacity`}>Ver Album</button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

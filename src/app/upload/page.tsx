@@ -4,10 +4,9 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
-import ThemeSelector from "@/components/ThemeSelector";
 
 function UploadContent() {
-  const { currentTheme } = useTheme();
+  const { t } = useTheme();
   const searchParams = useSearchParams();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -16,401 +15,156 @@ function UploadContent() {
   const [albums, setAlbums] = useState<any[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<string>('');
 
-  // Cargar álbumes disponibles
   useEffect(() => {
-    const fetchAlbums = async () => {
-      try {
-        const response = await fetch('/api/albums');
-        const data = await response.json();
-        if (data.success) {
-          setAlbums(data.data);
-          
-          // Si hay un álbum en la URL, seleccionarlo automáticamente
+    fetch('/api/albums')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          setAlbums(d.data);
           const albumFromUrl = searchParams.get('album');
-          if (albumFromUrl) {
-            setSelectedAlbum(albumFromUrl);
-          }
+          if (albumFromUrl) setSelectedAlbum(albumFromUrl);
         }
-      } catch (error) {
-        console.error('Error fetching albums:', error);
-      }
-    };
-    fetchAlbums();
+      })
+      .catch(console.error);
   }, [searchParams]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+    setDragActive(e.type === "dragenter" || e.type === "dragover");
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const files = Array.from(e.dataTransfer.files);
-      const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    if (e.dataTransfer.files?.[0]) {
+      const imageFiles = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
       setSelectedFiles(prev => [...prev, ...imageFiles]);
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
-      const imageFiles = files.filter(file => file.type.startsWith('image/'));
+      const imageFiles = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
       setSelectedFiles(prev => [...prev, ...imageFiles]);
     }
   };
 
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
   const handleUpload = async () => {
-    if (selectedFiles.length === 0) return;
-    if (!selectedAlbum) {
-      alert('Por favor selecciona un álbum');
-      return;
-    }
-
+    if (!selectedFiles.length) return;
+    if (!selectedAlbum) { alert('Selecciona un album'); return; }
     setUploading(true);
     setUploadProgress(0);
-
     try {
-      // Subir en lotes de 10 imágenes para evitar timeouts
       const BATCH_SIZE = 10;
-      const totalFiles = selectedFiles.length;
-      let uploadedCount = 0;
-      let failedCount = 0;
-
-      for (let i = 0; i < totalFiles; i += BATCH_SIZE) {
+      let uploadedCount = 0, failedCount = 0;
+      for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
         const batch = selectedFiles.slice(i, i + BATCH_SIZE);
         const formData = new FormData();
-
-        // Agregar archivos del lote al FormData
-        batch.forEach((file) => {
-          formData.append('files', file);
-        });
-
-        // Agregar ID del álbum seleccionado
+        batch.forEach(f => formData.append('files', f));
         formData.append('albumId', selectedAlbum);
-
         try {
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            uploadedCount += data.data.length;
-          } else {
-            failedCount += batch.length;
-            console.error(`Error en lote: ${data.error}`);
-          }
-        } catch (batchError) {
-          failedCount += batch.length;
-          console.error('Error subiendo lote:', batchError);
-        }
-
-        // Actualizar progreso real
-        const progress = Math.round(((i + batch.length) / totalFiles) * 100);
-        setUploadProgress(progress);
+          const res = await fetch('/api/upload', { method: 'POST', body: formData });
+          const data = await res.json();
+          if (data.success) uploadedCount += data.data.length;
+          else failedCount += batch.length;
+        } catch { failedCount += batch.length; }
+        setUploadProgress(Math.round(((i + batch.length) / selectedFiles.length) * 100));
       }
-
       setUploadProgress(100);
-
-      if (failedCount === 0) {
-        alert(`¡Éxito! Se subieron ${uploadedCount} imagen(es).`);
-      } else {
-        alert(`Se subieron ${uploadedCount} imagen(es). ${failedCount} fallaron.`);
-      }
-
+      alert(failedCount === 0 ? `Se subieron ${uploadedCount} imagen(es).` : `Se subieron ${uploadedCount} imagen(es). ${failedCount} fallaron.`);
       setSelectedFiles([]);
-
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      alert('Error al subir las imágenes');
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-    }
+    } catch { alert('Error al subir las imagenes'); }
+    finally { setUploading(false); setUploadProgress(0); }
   };
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${
-      currentTheme === 'ocean' ? 'bg-gradient-to-br from-cyan-50 to-blue-100' :
-      currentTheme === 'sunset' ? 'bg-gradient-to-br from-orange-50 to-red-100' :
-      currentTheme === 'forest' ? 'bg-gradient-to-br from-green-50 to-emerald-100' :
-      currentTheme === 'cosmic' ? 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900' :
-      currentTheme === 'dark' ? 'bg-gray-900' :
-      'bg-gray-50'
-    }`}>
-      {/* Header */}
-      <header className={`shadow-sm border-b transition-all duration-300 ${
-        currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' :
-        currentTheme === 'cosmic' ? 'bg-purple-800/80 border-purple-600' :
-        currentTheme === 'ocean' ? 'bg-white/80 border-cyan-200' :
-        currentTheme === 'sunset' ? 'bg-white/80 border-orange-200' :
-        currentTheme === 'forest' ? 'bg-white/80 border-green-200' :
-        'bg-white border-gray-200'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className={`flex items-center transition-colors duration-300 ${
-                currentTheme === 'dark' || currentTheme === 'cosmic' ? 
-                'text-gray-300 hover:text-white' : 
-                'text-gray-600 hover:text-gray-900'
-              }`}>
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Volver
-              </Link>
-              <div className={`h-6 w-px transition-colors duration-300 ${
-                currentTheme === 'dark' ? 'bg-gray-600' :
-                currentTheme === 'cosmic' ? 'bg-purple-400' :
-                'bg-gray-300'
-              }`} />
-              <h1 className={`text-xl font-semibold transition-colors duration-300 ${
-                currentTheme === 'dark' || currentTheme === 'cosmic' ? 'text-white' : 'text-gray-900'
-              }`}>
-                Subir Fotos
-              </h1>
-            </div>
-            {/* Selector de tema */}
-            <div className="absolute top-6 right-6">
-              <ThemeSelector />
-            </div>
-          </div>
+    <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="mb-8 md:ml-0 ml-10">
+          <nav className={`flex items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
+            <Link href="/" className="hover:underline">Inicio</Link>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className={t.text}>Subir Fotos</span>
+          </nav>
+          <h1 className={`text-2xl font-bold ${t.text}`}>Subir Fotos</h1>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumbs */}
-        <nav className="mb-8 text-sm font-medium text-gray-500">
-          <ol className="list-none p-0 inline-flex">
-            <li className="flex items-center">
-              <Link href="/" className="text-blue-600 hover:underline">
-                Álbumes
-              </Link>
-              <svg className="fill-current w-3 h-3 mx-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
-                <path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.488 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z"/>
+        <div className="space-y-6">
+          <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-6`}>
+            <label className={`block text-sm font-medium ${t.text} mb-2`}>Album de destino</label>
+            <select value={selectedAlbum} onChange={e => setSelectedAlbum(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-blue-500 focus:outline-none`}>
+              <option value="">-- Selecciona un album --</option>
+              {albums.map(a => <option key={a.id} value={a.id}>{a.year} - {a.title} {a.subAlbum ? `(${a.subAlbum})` : ''}</option>)}
+            </select>
+          </div>
+
+          <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-8`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
+            <div className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${dragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : t.inputBorder}`}>
+              <svg className={`w-12 h-12 mx-auto mb-4 ${t.textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-            </li>
-            <li>
-              <span>Subir Fotos</span>
-            </li>
-          </ol>
-        </nav>
-
-        <div className="space-y-8">
-          {/* Área de Subida */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Subir Nuevas Fotos
-            </h2>
-            
-            {/* Selector de Álbum */}
-            <div className="mb-6">
-              <label htmlFor="album-select" className="block text-sm font-medium text-gray-700 mb-2">
-                Seleccionar Álbum
-              </label>
-              <select
-                id="album-select"
-                value={selectedAlbum}
-                onChange={(e) => setSelectedAlbum(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">-- Selecciona un álbum --</option>
-                {albums.map((album) => (
-                  <option key={album.id} value={album.id}>
-                    {album.year} - {album.title} {album.subAlbum ? `(${album.subAlbum})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Drag & Drop Area */}
-            <div
-              className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
-                dragActive 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <div className="space-y-4">
-                <div className="text-6xl text-gray-400">📷</div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Arrastra tus fotos aquí
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    O haz clic para seleccionar archivos
-                  </p>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleFileInput}
-                    className="hidden"
-                    id="file-input"
-                  />
-                  <label
-                    htmlFor="file-input"
-                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    Seleccionar Archivos
-                  </label>
-                </div>
-                <p className="text-sm text-gray-500">
-                  Formatos soportados: JPG, PNG, GIF, WebP (máximo 10MB por archivo)
-                </p>
-              </div>
+              <p className={`font-medium ${t.text} mb-1`}>Arrastra tus fotos aqui</p>
+              <p className={`text-sm ${t.textMuted} mb-4`}>o haz clic para seleccionar</p>
+              <input type="file" multiple accept="image/*" onChange={handleFileInput} className="hidden" id="file-input" />
+              <label htmlFor="file-input" className={`inline-flex items-center px-5 py-2.5 ${t.accentBg} text-white rounded-xl cursor-pointer hover:opacity-90 transition-opacity text-sm font-medium`}>Seleccionar Archivos</label>
+              <p className={`text-xs ${t.textMuted} mt-4`}>JPG, PNG, GIF, WebP (max 10MB)</p>
             </div>
           </div>
 
-          {/* Archivos Seleccionados */}
           {selectedFiles.length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-6`}>
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Archivos Seleccionados ({selectedFiles.length})
-                </h3>
-                <button
-                  onClick={() => setSelectedFiles([])}
-                  className="text-sm text-red-600 hover:text-red-700 transition-colors"
-                >
-                  Limpiar Todo
-                </button>
+                <h3 className={`font-semibold ${t.text}`}>{selectedFiles.length} archivo(s)</h3>
+                <button onClick={() => setSelectedFiles([])} className={`text-sm ${t.danger}`}>Limpiar</button>
               </div>
-              
-              <div className="space-y-3">
-                {selectedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {selectedFiles.map((file, i) => (
+                  <div key={i} className={`flex items-center justify-between p-3 rounded-xl ${t.inputBg}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="min-w-0">
+                        <p className={`text-sm font-medium ${t.text} truncate`}>{file.name}</p>
+                        <p className={`text-xs ${t.textMuted}`}>{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => removeFile(index)}
-                      className="text-red-600 hover:text-red-700 transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button onClick={() => setSelectedFiles(prev => prev.filter((_, idx) => idx !== i))} className={t.danger}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Configuración de Álbum */}
-          {/* Información del Álbum Seleccionado */}
-          {selectedFiles.length > 0 && selectedAlbum && (
-            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                📁 Álbum de Destino
-              </h3>
-              <p className="text-blue-800">
-                {albums.find(album => album.id === selectedAlbum)?.year} - {albums.find(album => album.id === selectedAlbum)?.title}
-                {albums.find(album => album.id === selectedAlbum)?.subAlbum && ` (${albums.find(album => album.id === selectedAlbum)?.subAlbum})`}
-              </p>
-            </div>
-          )}
-
-          {/* Botones de Acción */}
-          {selectedFiles.length > 0 && (
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setSelectedFiles([])}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleUpload}
-                disabled={uploading}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {uploading ? 'Subiendo...' : 'Subir Fotos'}
-              </button>
-            </div>
-          )}
-
-          {/* Barra de Progreso */}
-          {uploading && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Subiendo Fotos...
-              </h3>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                ></div>
+              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-black/5 dark:border-white/5">
+                <button onClick={() => setSelectedFiles([])} className={`px-5 py-2.5 rounded-xl text-sm font-medium border ${t.inputBorder} ${t.text}`}>Cancelar</button>
+                <button onClick={handleUpload} disabled={uploading || !selectedAlbum} className={`px-5 py-2.5 rounded-xl text-sm font-medium text-white ${t.accentBg} disabled:opacity-50`}>
+                  {uploading ? 'Subiendo...' : 'Subir Fotos'}
+                </button>
               </div>
-              <p className="text-sm text-gray-600 mt-2">
-                {uploadProgress}% completado
-              </p>
+            </div>
+          )}
+
+          {uploading && (
+            <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-6`}>
+              <p className={`text-sm font-medium ${t.text} mb-3`}>Subiendo...</p>
+              <div className={`w-full ${t.inputBg} rounded-full h-2`}>
+                <div className={`${t.accentBg} h-2 rounded-full transition-all duration-300`} style={{ width: `${uploadProgress}%` }} />
+              </div>
+              <p className={`text-xs ${t.textMuted} mt-2`}>{uploadProgress}%</p>
             </div>
           )}
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center">
-            <p className="text-sm font-semibold text-gray-600 mb-2">
-              © 2024 Álbum de Fotos - Creado con Next.js y Tailwind CSS
-            </p>
-            <p className="text-xs text-gray-500">
-              Organiza tus recuerdos de manera inteligente
-            </p>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }
 
 export default function UploadPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-stone-100 dark:bg-neutral-950"><div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-gray-300" /></div>}>
       <UploadContent />
     </Suspense>
   );

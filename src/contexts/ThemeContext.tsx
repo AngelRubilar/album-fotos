@@ -2,141 +2,75 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-// Definición de tipos para los temas
-export type ThemeType = 'light' | 'dark' | 'ocean' | 'sunset' | 'forest' | 'cosmic';
+export type ThemeType = 'light' | 'dark';
 
 export interface ThemeColors {
-  background: string;
-  surface: string;
-  primary: string;
-  secondary: string;
-  accent: string;
+  mode: 'light' | 'dark';
+  bg: string;
+  cardBg: string;
+  cardBorder: string;
+  cardShadow: string;
+  sidebarBg: string;
   text: string;
-  textSecondary: string;
+  textMuted: string;
   border: string;
-  hover: string;
-  gradient: {
-    from: string;
-    via: string;
-    to: string;
-  };
+  navActive: string;
+  navItem: string;
+  inputBg: string;
+  inputBorder: string;
+  accent: string;
+  accentBg: string;
+  danger: string;
+  overlay: string;
 }
 
-// Definición de todos los temas disponibles
 export const themes: Record<ThemeType, ThemeColors> = {
   light: {
-    background: 'bg-gray-50',
-    surface: 'bg-white',
-    primary: 'bg-blue-600',
-    secondary: 'bg-gray-600',
-    accent: 'bg-blue-500',
+    mode: 'light',
+    bg: 'bg-stone-100',
+    cardBg: 'bg-white',
+    cardBorder: 'border border-black/[0.04]',
+    cardShadow: 'shadow-sm',
+    sidebarBg: 'bg-stone-100/90 backdrop-blur-2xl border-r border-black/[0.03]',
     text: 'text-gray-900',
-    textSecondary: 'text-gray-600',
-    border: 'border-gray-200',
-    hover: 'hover:bg-blue-50',
-    gradient: {
-      from: 'from-blue-400',
-      via: 'via-blue-500',
-      to: 'to-blue-600'
-    }
+    textMuted: 'text-gray-500',
+    border: 'border-black/[0.06]',
+    navActive: 'bg-blue-600 text-white',
+    navItem: 'text-gray-600 hover:bg-black/[0.04]',
+    inputBg: 'bg-gray-100',
+    inputBorder: 'border-gray-200',
+    accent: 'text-blue-600',
+    accentBg: 'bg-blue-600',
+    danger: 'text-red-500 hover:text-red-600',
+    overlay: 'bg-black/60 backdrop-blur-2xl',
   },
   dark: {
-    background: 'bg-gray-900',
-    surface: 'bg-gray-800',
-    primary: 'bg-blue-500',
-    secondary: 'bg-gray-700',
-    accent: 'bg-blue-400',
+    mode: 'dark',
+    bg: 'bg-neutral-950',
+    cardBg: 'bg-neutral-900',
+    cardBorder: 'border border-white/[0.06]',
+    cardShadow: 'shadow-none',
+    sidebarBg: 'bg-neutral-950 border-r border-white/[0.03]',
     text: 'text-white',
-    textSecondary: 'text-gray-300',
-    border: 'border-gray-700',
-    hover: 'hover:bg-gray-700',
-    gradient: {
-      from: 'from-blue-500',
-      via: 'via-blue-600',
-      to: 'to-blue-700'
-    }
+    textMuted: 'text-neutral-500',
+    border: 'border-white/[0.06]',
+    navActive: 'bg-blue-600 text-white',
+    navItem: 'text-neutral-400 hover:bg-white/[0.05]',
+    inputBg: 'bg-neutral-800',
+    inputBorder: 'border-neutral-700',
+    accent: 'text-blue-400',
+    accentBg: 'bg-blue-500',
+    danger: 'text-red-400 hover:text-red-300',
+    overlay: 'bg-black/80 backdrop-blur-2xl',
   },
-  ocean: {
-    background: 'bg-gradient-to-br from-cyan-50 to-blue-100',
-    surface: 'bg-white/80 backdrop-blur-sm',
-    primary: 'bg-cyan-600',
-    secondary: 'bg-teal-600',
-    accent: 'bg-cyan-500',
-    text: 'text-cyan-900',
-    textSecondary: 'text-cyan-700',
-    border: 'border-cyan-200',
-    hover: 'hover:bg-cyan-50',
-    gradient: {
-      from: 'from-cyan-400',
-      via: 'via-blue-500',
-      to: 'to-teal-600'
-    }
-  },
-  sunset: {
-    background: 'bg-gradient-to-br from-orange-50 to-red-100',
-    surface: 'bg-white/80 backdrop-blur-sm',
-    primary: 'bg-orange-600',
-    secondary: 'bg-red-600',
-    accent: 'bg-orange-500',
-    text: 'text-orange-900',
-    textSecondary: 'text-orange-700',
-    border: 'border-orange-200',
-    hover: 'hover:bg-orange-50',
-    gradient: {
-      from: 'from-orange-400',
-      via: 'via-red-500',
-      to: 'to-pink-600'
-    }
-  },
-  forest: {
-    background: 'bg-gradient-to-br from-green-50 to-emerald-100',
-    surface: 'bg-white/80 backdrop-blur-sm',
-    primary: 'bg-green-600',
-    secondary: 'bg-emerald-600',
-    accent: 'bg-green-500',
-    text: 'text-green-900',
-    textSecondary: 'text-green-700',
-    border: 'border-green-200',
-    hover: 'hover:bg-green-50',
-    gradient: {
-      from: 'from-green-400',
-      via: 'via-emerald-500',
-      to: 'to-teal-600'
-    }
-  },
-  cosmic: {
-    background: 'bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900',
-    surface: 'bg-purple-800/80 backdrop-blur-sm',
-    primary: 'bg-purple-600',
-    secondary: 'bg-indigo-600',
-    accent: 'bg-purple-500',
-    text: 'text-white',
-    textSecondary: 'text-purple-200',
-    border: 'border-purple-600',
-    hover: 'hover:bg-purple-700/50',
-    gradient: {
-      from: 'from-purple-400',
-      via: 'via-pink-500',
-      to: 'to-indigo-600'
-    }
-  }
-};
-
-// Información descriptiva de los temas
-export const themeInfo: Record<ThemeType, { name: string; description: string; icon: string }> = {
-  light: { name: 'Claro', description: 'Tema limpio y minimalista', icon: '☀️' },
-  dark: { name: 'Oscuro', description: 'Perfecto para usar de noche', icon: '🌙' },
-  ocean: { name: 'Océano', description: 'Aires frescos del mar', icon: '🌊' },
-  sunset: { name: 'Atardecer', description: 'Tonos cálidos del ocaso', icon: '🌅' },
-  forest: { name: 'Bosque', description: 'Verdes naturales y relajantes', icon: '🌲' },
-  cosmic: { name: 'Cósmico', description: 'Misterios del universo', icon: '🌌' }
 };
 
 interface ThemeContextType {
   currentTheme: ThemeType;
   setTheme: (theme: ThemeType) => void;
-  themeColors: ThemeColors;
-  availableThemes: ThemeType[];
+  toggleTheme: () => void;
+  t: ThemeColors;
+  isDark: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -144,29 +78,28 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<ThemeType>('light');
 
-  // Cargar tema guardado al inicializar
   useEffect(() => {
-    const savedTheme = localStorage.getItem('album-theme') as ThemeType;
-    if (savedTheme && themes[savedTheme]) {
-      setCurrentTheme(savedTheme);
+    const saved = localStorage.getItem('album-theme') as ThemeType;
+    if (saved && themes[saved]) {
+      setCurrentTheme(saved);
     }
   }, []);
 
-  // Aplicar tema al documento
   useEffect(() => {
-    document.documentElement.className = `theme-${currentTheme}`;
+    const root = document.documentElement;
+    root.className = currentTheme === 'dark' ? 'dark' : '';
     localStorage.setItem('album-theme', currentTheme);
   }, [currentTheme]);
 
-  const setTheme = (theme: ThemeType) => {
-    setCurrentTheme(theme);
-  };
+  const setTheme = (theme: ThemeType) => setCurrentTheme(theme);
+  const toggleTheme = () => setCurrentTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   const value: ThemeContextType = {
     currentTheme,
     setTheme,
-    themeColors: themes[currentTheme],
-    availableThemes: Object.keys(themes) as ThemeType[]
+    toggleTheme,
+    t: themes[currentTheme],
+    isDark: currentTheme === 'dark',
   };
 
   return (

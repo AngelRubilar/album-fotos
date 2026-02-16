@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import Sidebar from "@/components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Álbum de Fotos",
-  description: "Tu galería personal de recuerdos organizados por años",
+  title: "Album de Fotos",
+  description: "Tu galeria personal de recuerdos",
 };
 
 export default function RootLayout({
@@ -25,11 +26,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased transition-all duration-300`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
-          {children}
+          <div className="flex min-h-screen">
+            <Sidebar />
+            <main className="flex-1 min-h-screen overflow-y-auto">
+              {children}
+            </main>
+          </div>
         </ThemeProvider>
       </body>
     </html>
