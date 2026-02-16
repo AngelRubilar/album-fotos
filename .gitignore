@@ -58,3 +58,23 @@ next-env.d.ts
 /backups/
 /backupsmigracion*/
 nul
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+
+# Claude Code config
+.claude/
+
+# Project workspace artifacts
+album-fotos/
+Untitled
+/package.json
+/package-lock.json
+/node_modules
