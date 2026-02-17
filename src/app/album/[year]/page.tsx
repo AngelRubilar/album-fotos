@@ -150,6 +150,9 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
           <h1 className={`text-2xl font-bold ${t.text}`}>
             {selectedAlbum ? selectedAlbumData?.title : year}
           </h1>
+          {selectedAlbum && selectedAlbumData?.description && (
+            <p className={`text-sm ${t.textMuted} mt-1`}>{selectedAlbumData.description}</p>
+          )}
         </div>
 
         {/* Album tabs */}
@@ -348,7 +351,16 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
         )}
       </div>
 
-      <ImageGallery images={images} currentIndex={galleryIndex} isOpen={galleryOpen} onClose={() => setGalleryOpen(false)} onImageChange={setGalleryIndex} />
+      <ImageGallery
+        images={images}
+        currentIndex={galleryIndex}
+        isOpen={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        onImageChange={setGalleryIndex}
+        onImageUpdate={(id, data) => {
+          setImages(prev => prev.map(img => img.id === id ? { ...img, ...data } : img));
+        }}
+      />
     </div>
   );
 }

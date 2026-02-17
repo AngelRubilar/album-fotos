@@ -9,6 +9,37 @@ interface RouteParams {
   }>;
 }
 
+// PATCH /api/images/[id] - Actualizar descripcion de imagen
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { description } = body;
+
+    const image = await prisma.image.findUnique({ where: { id } });
+    if (!image) {
+      return NextResponse.json(
+        { success: false, error: 'Imagen no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    const updated = await prisma.image.update({
+      where: { id },
+      data: { description: description?.trim() ?? null },
+      select: { id: true, description: true },
+    });
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error updating image:', error);
+    return NextResponse.json(
+      { success: false, error: 'Error al actualizar imagen' },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE /api/images/[id] - Eliminar imagen específica
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
@@ -51,7 +82,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       }
     } catch (error) {
       console.log('Error eliminando archivos físicos:', error);
-      // No fallar la operación por problemas con archivos
     }
 
     // Eliminar de la base de datos
