@@ -220,13 +220,13 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
           </div>
         )}
 
-        {/* Photos: Masonry */}
+        {/* Photos: Masonry - uses thumbnails for performance */}
         {selectedAlbum && images.length > 0 && layoutMode === 'masonry' && (
           <div className="masonry">
             {images.map((image, index) => (
               <div key={image.id} className="masonry-item animate-fade-up group">
                 <div className="photo-card cursor-pointer relative" onClick={() => { setGalleryIndex(index); setGalleryOpen(true); }}>
-                  <Image src={image.fileUrl || '/placeholder.jpg'} alt={image.originalName || ''} width={600} height={0} className="w-full h-auto block rounded-xl" sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" />
+                  <Image src={image.thumbnailUrl || image.fileUrl || '/placeholder.jpg'} alt={image.originalName || ''} width={600} height={0} className="w-full h-auto block rounded-xl" sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" />
                   <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
                     <svg className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
@@ -243,13 +243,13 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
           </div>
         )}
 
-        {/* Photos: Grid */}
+        {/* Photos: Grid - uses thumbnails for performance */}
         {selectedAlbum && images.length > 0 && layoutMode === 'grid' && (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
             {images.map((image, index) => (
               <div key={image.id} className="animate-fade-up group" style={{ animationDelay: `${Math.min(index * 30, 400)}ms` }}>
                 <div className="photo-card cursor-pointer relative aspect-square" onClick={() => { setGalleryIndex(index); setGalleryOpen(true); }}>
-                  <Image src={image.fileUrl || '/placeholder.jpg'} alt={image.originalName || ''} fill className="object-cover rounded-xl" sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" />
+                  <Image src={image.thumbnailUrl || image.fileUrl || '/placeholder.jpg'} alt={image.originalName || ''} fill className="object-cover rounded-xl" sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" />
                   <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
                     <svg className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />

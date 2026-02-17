@@ -6,6 +6,7 @@ import Image from 'next/image';
 interface ImageData {
   id: string;
   fileUrl: string;
+  thumbnailUrl?: string;
   originalName: string;
   description?: string;
 }
@@ -70,7 +71,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
           </button>
         </div>
 
-        {/* Image */}
+        {/* Image - full resolution for detailed viewing */}
         <div className="flex-1 relative flex items-center justify-center px-16">
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -102,7 +103,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
           )}
         </div>
 
-        {/* Bottom */}
+        {/* Bottom - thumbnail strip uses thumbnailUrl for performance */}
         <div className="px-5 py-4 relative z-10">
           {img.description && <p className="text-center text-white/70 text-sm mb-3">{img.description}</p>}
           {images.length > 1 && (
@@ -115,7 +116,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
                     i === idx ? 'ring-2 ring-white scale-110' : 'opacity-40 hover:opacity-70'
                   }`}
                 >
-                  <Image src={image.fileUrl} alt="" width={48} height={48} className="w-full h-full object-cover" />
+                  <Image src={image.thumbnailUrl || image.fileUrl} alt="" width={48} height={48} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
