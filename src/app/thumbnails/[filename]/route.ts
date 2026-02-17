@@ -1,42 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
+import { stat } from 'fs/promises';
+import { createReadStream } from 'fs';
 import path from 'path';
+import { Readable } from 'stream';
+
+const mimeTypes: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+};
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
   try {
-    const filename = params.filename;
+    const { filename } = await params;
     const filePath = path.join(process.cwd(), 'public', 'thumbnails', filename);
 
-    // Verificar si el archivo existe
+    let fileStats;
     try {
-      await fs.access(filePath);
+      fileStats = await stat(filePath);
     } catch {
       return new NextResponse('File not found', { status: 404 });
     }
 
-    // Leer el archivo
-    const fileBuffer = await fs.readFile(filePath);
-
-    // Determinar el tipo MIME basado en la extensión
     const ext = path.extname(filename).toLowerCase();
-    const mimeTypes: Record<string, string> = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
-    };
-
     const mimeType = mimeTypes[ext] || 'application/octet-stream';
 
-    // Devolver la imagen
-    return new NextResponse(fileBuffer, {
+    const stream = createReadStream(filePath);
+    const webStream = Readable.toWeb(stream) as ReadableStream;
+
+    return new NextResponse(webStream, {
       status: 200,
       headers: {
         'Content-Type': mimeType,
+        'Content-Length': String(fileStats.size),
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });

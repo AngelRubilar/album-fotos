@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import archiver from 'archiver';
 import { Readable } from 'stream';
 import path from 'path';
 import fs from 'fs';
-
-const prisma = new PrismaClient();
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -45,9 +43,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       `${album.year}_${album.title}${album.subAlbum ? `_${album.subAlbum}` : ''}.zip`
     );
 
-    // 4. Crear archiver con máxima compresión
+    // 4. Use level 1 compression - JPEG/WebP are already compressed,
+    //    higher levels waste CPU without meaningful size reduction
     const archive = archiver('zip', {
-      zlib: { level: 9 }
+      zlib: { level: 1 }
     });
 
     // 5. Configurar headers para descarga
@@ -74,7 +73,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       // Verificar si existe y no está vacío
       if (!fs.existsSync(filePath)) {
-        console.warn(`⚠️ File not found: ${image.filename}`);
+        console.warn(`File not found: ${image.filename}`);
         skippedFiles.push(image.filename);
         continue;
       }
@@ -82,12 +81,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       try {
         const stats = fs.statSync(filePath);
         if (stats.size === 0) {
-          console.warn(`⚠️ Empty file: ${image.filename}`);
+          console.warn(`Empty file: ${image.filename}`);
           skippedFiles.push(image.filename);
           continue;
         }
       } catch (error) {
-        console.error(`❌ Error checking file ${image.filename}:`, error);
+        console.error(`Error checking file ${image.filename}:`, error);
         skippedFiles.push(image.filename);
         continue;
       }
@@ -102,9 +101,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     archive.finalize();
 
     // 9. Log de resultados
-    console.log(`✅ ZIP created: ${zipFilename} - ${addedCount} files`);
+    console.log(`ZIP created: ${zipFilename} - ${addedCount} files`);
     if (skippedFiles.length > 0) {
-      console.log(`⚠️ Skipped: ${skippedFiles.length} files`);
+      console.log(`Skipped: ${skippedFiles.length} files`);
     }
 
     // 10. Convertir stream para Next.js

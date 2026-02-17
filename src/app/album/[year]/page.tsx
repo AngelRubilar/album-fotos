@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -17,18 +17,24 @@ const ImageGallery = dynamic(() => import("@/components/ImageGallery"), {
 });
 
 type LayoutMode = 'masonry' | 'grid';
+const PAGE_SIZE = 50;
 
 export default function AlbumPage({ params }: { params: Promise<{ year: string }> }) {
   const { t } = useTheme();
   const [year, setYear] = useState('');
   const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [subAlbums, setSubAlbums] = useState<any[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [selectedAlbumData, setSelectedAlbumData] = useState<any>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('masonry');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalImages, setTotalImages] = useState(0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('album-layout') as LayoutMode;
@@ -42,25 +48,54 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
 
   useEffect(() => { params.then(({ year }) => setYear(year)); }, [params]);
 
-  const loadAlbumImages = async (albumId: string) => {
+  const loadAlbumImages = useCallback(async (albumId: string, page: number = 1, append: boolean = false) => {
+    if (page > 1) setLoadingMore(true);
     try {
-      const res = await fetch(`/api/albums/${albumId}/images`);
+      const res = await fetch(`/api/albums/${albumId}/images?page=${page}&limit=${PAGE_SIZE}`);
       const data = await res.json();
       if (data.success) {
-        setSelectedAlbum(albumId);
-        setSelectedAlbumData(data.data.album);
-        setImages(data.data.images);
+        if (!append) {
+          setSelectedAlbum(albumId);
+          setSelectedAlbumData(data.data.album);
+          setImages(data.data.images);
+        } else {
+          setImages(prev => [...prev, ...data.data.images]);
+        }
+        setCurrentPage(data.data.pagination.page);
+        setHasMore(data.data.pagination.hasMore);
+        setTotalImages(data.data.pagination.total);
       }
     } catch (e) { console.error(e); }
-  };
+    finally { setLoadingMore(false); }
+  }, []);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore || !selectedAlbum) return;
+    loadAlbumImages(selectedAlbum, currentPage + 1, true);
+  }, [loadingMore, hasMore, selectedAlbum, currentPage, loadAlbumImages]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore || !selectedAlbum) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: '400px' }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, selectedAlbum, loadMore]);
 
   const deleteImage = async (imageId: string) => {
     if (!confirm('Eliminar esta imagen?')) return;
     try {
       const res = await fetch(`/api/images/${imageId}`, { method: 'DELETE' });
       const data = await res.json();
-      if (data.success && selectedAlbum) await loadAlbumImages(selectedAlbum);
-      else if (!data.success) alert('Error: ' + data.error);
+      if (data.success) {
+        setImages(prev => prev.filter(img => img.id !== imageId));
+        setTotalImages(prev => prev - 1);
+      } else {
+        alert('Error: ' + data.error);
+      }
     } catch { alert('Error al eliminar'); }
   };
 
@@ -74,6 +109,8 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
           setSelectedAlbum(null);
           setSelectedAlbumData(null);
           setImages([]);
+          setHasMore(false);
+          setTotalImages(0);
         }
       })
       .catch(console.error)
@@ -100,7 +137,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
             </svg>
             {selectedAlbum ? (
               <>
-                <button onClick={() => { setSelectedAlbum(null); setImages([]); }} className="hover:underline">{year}</button>
+                <button onClick={() => { setSelectedAlbum(null); setImages([]); setHasMore(false); }} className="hover:underline">{year}</button>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -138,11 +175,11 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
         {selectedAlbum && images.length > 0 && (
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div className="flex items-center gap-2">
-              <span className={`text-sm ${t.textMuted}`}>{images.length} fotos</span>
+              <span className={`text-sm ${t.textMuted}`}>{totalImages} fotos</span>
               <span className={`text-sm ${t.textMuted}`}>&middot;</span>
               <button
                 onClick={async () => {
-                  if (!confirm(`Descargar ${images.length} imagenes?`)) return;
+                  if (!confirm(`Descargar ${totalImages} imagenes?`)) return;
                   try {
                     const res = await fetch(`/api/albums/${selectedAlbum}/download`);
                     if (!res.ok) throw new Error((await res.json()).error || 'Error');
@@ -266,8 +303,21 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
           </div>
         )}
 
+        {/* Infinite scroll sentinel + loading indicator */}
+        {selectedAlbum && hasMore && (
+          <div ref={sentinelRef} className="flex justify-center py-8">
+            {loadingMore ? (
+              <div className={`animate-spin rounded-full h-6 w-6 border-2 border-t-transparent ${t.border}`} />
+            ) : (
+              <button onClick={loadMore} className={`text-sm ${t.accent} hover:underline`}>
+                Cargar mas fotos ({images.length} de {totalImages})
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Empty states */}
-        {selectedAlbum && images.length === 0 && (
+        {selectedAlbum && images.length === 0 && !loadingMore && (
           <div className="text-center py-20">
             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl ${t.cardBg} ${t.cardBorder} mb-5`}>
               <svg className={`w-8 h-8 ${t.textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
 import { generateThumbnailForUpload } from '@/lib/thumbnail';
+import sharp from 'sharp';
 
 // Configuración para permitir archivos grandes (500MB máximo)
 export const config = {
@@ -51,10 +52,6 @@ export async function POST(request: NextRequest) {
       const fileExtension = path.extname(file.name);
       const fileName = `${timestamp}_${randomId}${fileExtension}`;
 
-      // Convertir archivo a buffer
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
       // Crear directorios si no existen
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
       const thumbnailsDir = path.join(process.cwd(), 'public', 'thumbnails');
@@ -66,31 +63,31 @@ export async function POST(request: NextRequest) {
         // Los directorios ya existen
       }
 
-      // Guardar archivo
+      // Write file to disk from stream (single pass, no double buffer)
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
       const filePath = path.join(uploadsDir, fileName);
       await writeFile(filePath, buffer);
 
-      // Generar thumbnail automáticamente
+      // Generate thumbnail from file on disk (not from buffer)
       let thumbnailUrl = `/thumbnails/${fileName}`;
       try {
         thumbnailUrl = await generateThumbnailForUpload(fileName, uploadsDir, thumbnailsDir);
-        console.log(`✅ Thumbnail generated: ${thumbnailUrl}`);
+        console.log(`Thumbnail generated: ${thumbnailUrl}`);
       } catch {
-        console.warn(`⚠️  Could not generate thumbnail for ${fileName}, using fallback`);
-        // Si falla, usar la imagen original
+        console.warn(`Could not generate thumbnail for ${fileName}, using fallback`);
         thumbnailUrl = `/uploads/${fileName}`;
       }
 
-      // Obtener metadatos reales de la imagen
+      // Read metadata from file on disk (sharp reads efficiently with file path)
       let realWidth = 800;
       let realHeight = 600;
       try {
-        const sharp = (await import('sharp')).default;
-        const metadata = await sharp(buffer).metadata();
+        const metadata = await sharp(filePath).metadata();
         realWidth = metadata.width || 800;
         realHeight = metadata.height || 600;
-      } catch (error) {
-        console.warn(`⚠️ Could not read image metadata for ${fileName}, using defaults`);
+      } catch {
+        console.warn(`Could not read image metadata for ${fileName}, using defaults`);
       }
 
       // Determinar el álbum a usar
@@ -144,7 +141,7 @@ export async function POST(request: NextRequest) {
           fileUrl: `/uploads/${fileName}`,
           thumbnailUrl: thumbnailUrl,
           fileSize: file.size,
-          width: realWidth,  // Dimensiones reales de la imagen
+          width: realWidth,
           height: realHeight,
           mimeType: file.type,
           description: ''

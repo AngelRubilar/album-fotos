@@ -7,18 +7,25 @@ interface RouteParams {
   }>;
 }
 
-// GET /api/albums/[id]/images - Obtener imágenes de un álbum específico
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+// GET /api/albums/[id]/images - Obtener imágenes de un álbum con paginacion
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
 
-    // Obtener álbum con sus imágenes
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)));
+    const skip = (page - 1) * limit;
+
+    // Get album info
     const album = await prisma.album.findUnique({
       where: { id },
-      include: {
-        images: {
-          orderBy: { uploadedAt: 'desc' }
-        }
+      select: {
+        id: true,
+        year: true,
+        title: true,
+        description: true,
+        subAlbum: true,
       }
     });
 
@@ -29,17 +36,40 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Get paginated images + total count in parallel
+    const [images, total] = await Promise.all([
+      prisma.image.findMany({
+        where: { albumId: id },
+        select: {
+          id: true,
+          fileUrl: true,
+          thumbnailUrl: true,
+          originalName: true,
+          description: true,
+          width: true,
+          height: true,
+        },
+        orderBy: { uploadedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.image.count({ where: { albumId: id } }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
     return NextResponse.json({
       success: true,
       data: {
-        album: {
-          id: album.id,
-          year: album.year,
-          title: album.title,
-          description: album.description,
-          subAlbum: album.subAlbum
-        },
-        images: album.images
+        album,
+        images,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasMore: page < totalPages,
+        }
       }
     });
   } catch (error) {

@@ -1,45 +1,32 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/years - Obtener años que tienen imágenes
+// GET /api/years - Obtener años que tienen imágenes (single query)
 export async function GET() {
   try {
-    // Obtener años con conteo de imágenes usando agregación
-    const yearsData = await prisma.album.groupBy({
-      by: ['year'],
-      _count: {
-        id: true
-      },
-      orderBy: {
-        year: 'desc'
-      }
-    });
+    // Single raw query replaces N+1 pattern (groupBy + N count queries)
+    const result = await prisma.$queryRaw<
+      Array<{ year: number; album_count: bigint; image_count: bigint }>
+    >`
+      SELECT a.year,
+             COUNT(DISTINCT a.id) as album_count,
+             COUNT(i.id) as image_count
+      FROM albums a
+      LEFT JOIN images i ON a.id = i."albumId"
+      GROUP BY a.year
+      HAVING COUNT(i.id) > 0
+      ORDER BY a.year DESC
+    `;
 
-    // Obtener conteo de imágenes por año
-    const yearsWithImages = await Promise.all(
-      yearsData.map(async (yearGroup) => {
-        const imageCount = await prisma.image.count({
-          where: {
-            album: {
-              year: yearGroup.year
-            }
-          }
-        });
-
-        return {
-          year: yearGroup.year,
-          totalImages: imageCount,
-          albumCount: yearGroup._count.id
-        };
-      })
-    );
-
-    // Filtrar solo años que tienen imágenes
-    const filteredYears = yearsWithImages.filter(y => y.totalImages > 0);
+    const data = result.map((row) => ({
+      year: row.year,
+      totalImages: Number(row.image_count),
+      albumCount: Number(row.album_count),
+    }));
 
     return NextResponse.json({
       success: true,
-      data: filteredYears
+      data
     }, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'

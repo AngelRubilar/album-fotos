@@ -20,7 +20,8 @@ const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, cla
     const fetchImages = async () => {
       try {
         if (albumId) {
-          const res = await fetch(`/api/albums/${albumId}/images`);
+          // Single fetch: get 4 images for this specific album
+          const res = await fetch(`/api/albums/${albumId}/images?limit=4`);
           const data = await res.json();
           if (!isMounted) return;
           if (data.success && data.data?.images) {
@@ -30,24 +31,12 @@ const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, cla
             setPreviewImages(imgs);
           }
         } else if (year) {
-          const res = await fetch(`/api/albums/year/${year}`);
+          // Single fetch: dedicated preview endpoint replaces N+1 cascade
+          const res = await fetch(`/api/albums/year/${year}/preview`);
           const data = await res.json();
           if (!isMounted) return;
           if (data.success && data.data) {
-            const imgs: string[] = [];
-            for (const album of data.data.slice(0, 4)) {
-              try {
-                const aRes = await fetch(`/api/albums/${album.id}/images`);
-                const aData = await aRes.json();
-                if (!isMounted) return;
-                if (aData.success && aData.data.images.length > 0) {
-                  const img = aData.data.images[0];
-                  const src = img.thumbnailUrl?.includes('.webp') ? img.thumbnailUrl : (img.thumbnailUrl || img.fileUrl);
-                  if (src) imgs.push(src);
-                }
-              } catch { /* skip */ }
-            }
-            setPreviewImages(imgs);
+            setPreviewImages(data.data);
           }
         }
       } catch { /* skip */ }
