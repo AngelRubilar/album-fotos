@@ -2,15 +2,23 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/Toast";
+import LoginModal from "@/components/LoginModal";
 import { FadeUp } from "@/components/MotionWrap";
 
 function UploadContent() {
   const { t } = useTheme();
+  const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
+  const router = useRouter();
   const searchParams = useSearchParams();
+
+  if (!isAuthenticated) {
+    return <LoginModal onSuccess={() => {}} onCancel={() => router.push('/')} />;
+  }
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);

@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/Toast";
+import LoginModal from "@/components/LoginModal";
 import { FadeUp, StaggerContainer, StaggerItem } from "@/components/MotionWrap";
 
 interface Album {
@@ -18,7 +21,9 @@ interface Album {
 
 export default function AdminPage() {
   const { t } = useTheme();
+  const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
+  const router = useRouter();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -57,6 +62,10 @@ export default function AdminPage() {
       } else { addToast(data.error || 'Error', 'error'); }
     } catch { addToast('Error al eliminar', 'error'); }
   };
+
+  if (!isAuthenticated) {
+    return <LoginModal onSuccess={() => {}} onCancel={() => router.push('/')} />;
+  }
 
   if (loading) {
     return (

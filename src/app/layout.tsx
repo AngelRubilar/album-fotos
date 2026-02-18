@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/components/Toast";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Sidebar from "@/components/Sidebar";
@@ -43,6 +44,7 @@ export default function RootLayout({
           Saltar al contenido
         </a>
         <ThemeProvider>
+          <AuthProvider>
           <ToastProvider>
             <div className="flex min-h-screen">
               <Sidebar />
@@ -53,6 +55,7 @@ export default function RootLayout({
               </main>
             </div>
           </ToastProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
