@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, memo } from 'react';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ImageData {
   id: string;
@@ -95,12 +96,29 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
     finally { setSaving(false); }
   };
 
-  if (!isOpen || !images.length) return null;
+  // Preload adjacent images
+  useEffect(() => {
+    if (!isOpen) return;
+    [idx - 1, idx + 1]
+      .filter(i => i >= 0 && i < images.length)
+      .forEach(i => {
+        const preload = new window.Image();
+        preload.src = images[i].fileUrl;
+      });
+  }, [idx, images, isOpen]);
 
   const img = images[idx];
 
   return (
-    <div className="fixed inset-0 z-50">
+    <AnimatePresence>
+    {isOpen && images.length > 0 && (
+    <motion.div
+      className="fixed inset-0 z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
       <div className="absolute inset-0 bg-black/85 backdrop-blur-2xl" onClick={() => { if (showInfo) setShowInfo(false); else onClose(); }} />
 
       <div className="relative w-full h-full flex flex-col">
@@ -139,15 +157,33 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-white/30" />
               </div>
             )}
-            <Image
-              src={img.fileUrl}
-              alt={img.originalName}
-              width={1400}
-              height={900}
-              className={`max-w-full max-h-[75vh] object-contain transition-opacity duration-200 ${loading ? 'opacity-0' : 'opacity-100'}`}
-              onLoad={() => setLoading(false)}
-              priority
-            />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={img.id}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.2 }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.2}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x > 100) go(-1);
+                  else if (info.offset.x < -100) go(1);
+                }}
+                className="cursor-grab active:cursor-grabbing"
+              >
+                <Image
+                  src={img.fileUrl}
+                  alt={img.originalName}
+                  width={1400}
+                  height={900}
+                  className={`max-w-full max-h-[75vh] object-contain transition-opacity duration-200 ${loading ? 'opacity-0' : 'opacity-100'}`}
+                  onLoad={() => setLoading(false)}
+                  priority
+                />
+              </motion.div>
+            </AnimatePresence>
             {images.length > 1 && (
               <>
                 <button onClick={() => go(-1)} className="absolute left-4 p-3 rounded-2xl bg-black/20 backdrop-blur-md hover:bg-white/10 transition-all text-white/50 hover:text-white border border-white/[0.06]">
@@ -165,8 +201,15 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
           </div>
 
           {/* Info panel */}
+          <AnimatePresence>
           {showInfo && (
-            <div className="w-80 bg-white/[0.06] backdrop-blur-2xl border-l border-white/[0.1] overflow-y-auto relative z-10">
+            <motion.div
+              className="w-80 bg-white/[0.06] backdrop-blur-2xl border-l border-white/[0.1] overflow-y-auto relative z-10"
+              initial={{ x: 320, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 320, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
               <div className="p-5 space-y-5">
                 <h3 className="text-white font-semibold text-sm">Informacion</h3>
 
@@ -237,8 +280,9 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
 
         {/* Bottom - thumbnail strip */}
@@ -262,7 +306,9 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
           {images.length > 1 && <p className="text-center text-white/20 text-xs mt-2">← → navegar · I info · ESC cerrar</p>}
         </div>
       </div>
-    </div>
+    </motion.div>
+    )}
+    </AnimatePresence>
   );
 });
 

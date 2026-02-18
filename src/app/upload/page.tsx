@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
+import { FadeUp } from "@/components/MotionWrap";
 
 function UploadContent() {
   const { t } = useTheme();
@@ -82,7 +83,7 @@ function UploadContent() {
   return (
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="mb-8 md:ml-0 ml-10">
+        <FadeUp className="mb-8 md:ml-0 ml-10">
           <nav className={`flex items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
             <Link href="/" className="hover:underline">Inicio</Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,7 +92,7 @@ function UploadContent() {
             <span className={t.text}>Subir Fotos</span>
           </nav>
           <h1 className={`text-2xl font-bold ${t.text}`}>Subir Fotos</h1>
-        </div>
+        </FadeUp>
 
         <div className="space-y-6">
           <div className={`${t.glassCard} rounded-2xl p-6`}>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
+import { FadeUp, StaggerContainer, StaggerItem } from "@/components/MotionWrap";
 
 interface Album {
   id: string;
@@ -63,7 +64,7 @@ export default function AdminPage() {
   return (
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-5xl mx-auto px-6 py-8">
-        <div className="mb-8 md:ml-0 ml-10">
+        <FadeUp className="mb-8 md:ml-0 ml-10">
           <nav className={`flex items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
             <Link href="/" className="hover:underline">Inicio</Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,7 +78,7 @@ export default function AdminPage() {
               {showForm ? 'Cancelar' : 'Crear Album'}
             </button>
           </div>
-        </div>
+        </FadeUp>
 
         {showForm && (
           <div className={`${t.glassCard} rounded-2xl p-6 mb-6`}>
@@ -118,9 +119,9 @@ export default function AdminPage() {
             <button onClick={() => setShowForm(true)} className="px-5 py-2 rounded-xl text-white font-medium btn-glass-accent">Crear Album</button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {albums.map(album => (
-              <div key={album.id} className={`${t.glassCard} rounded-2xl p-5`}>
+              <StaggerItem key={album.id} className={`${t.glassCard} rounded-2xl p-5`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -143,9 +144,9 @@ export default function AdminPage() {
                 <Link href={`/album/${album.year}`}>
                   <button className="w-full px-4 py-2 rounded-xl text-sm font-medium text-white btn-glass-accent">Ver Album</button>
                 </Link>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         )}
       </div>
     </div>
