@@ -56,7 +56,7 @@ export default function Sidebar() {
         fixed md:sticky top-0 left-0 h-screen w-60 z-40
         ${t.sidebarBg}
         flex flex-col
-        transition-transform duration-300 ease-out
+        transition-all duration-300 ease-out
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         shrink-0 glass-glow
       `}>

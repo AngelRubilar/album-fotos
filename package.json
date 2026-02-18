@@ -11,7 +11,8 @@
     "db:reset": "npx prisma migrate reset --force && npm run db:seed",
     "generate-thumbnails": "tsx scripts/generate-thumbnails.ts",
     "update-thumbnails": "tsx scripts/update-thumbnail-paths.ts",
-    "generate-blur": "tsx scripts/generate-blur-placeholders.ts"
+    "generate-blur": "tsx scripts/generate-blur-placeholders.ts",
+    "fix-orientation": "tsx scripts/fix-image-orientation.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

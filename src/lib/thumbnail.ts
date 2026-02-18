@@ -30,8 +30,9 @@ export async function generateThumbnail(
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // Generar thumbnail con Sharp
+    // Generar thumbnail con Sharp (rotate auto-corrige orientacion EXIF)
     await sharp(inputPath)
+      .rotate()
       .resize(THUMBNAIL_CONFIG.width, THUMBNAIL_CONFIG.height, {
         fit: THUMBNAIL_CONFIG.fit,
         position: 'center',

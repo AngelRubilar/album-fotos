@@ -63,11 +63,19 @@ export async function POST(request: NextRequest) {
         // Los directorios ya existen
       }
 
-      // Write file to disk from stream (single pass, no double buffer)
+      // Write file to disk, auto-rotating based on EXIF orientation
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       const filePath = path.join(uploadsDir, fileName);
-      await writeFile(filePath, buffer);
+
+      // Auto-rotate to fix EXIF orientation (fotos de celular)
+      try {
+        const rotatedBuffer = await sharp(buffer).rotate().toBuffer();
+        await writeFile(filePath, rotatedBuffer);
+      } catch {
+        // Si falla la rotacion, guardar el original
+        await writeFile(filePath, buffer);
+      }
 
       // Generate thumbnail from file on disk (not from buffer)
       let thumbnailUrl = `/thumbnails/${fileName}`;
@@ -79,7 +87,7 @@ export async function POST(request: NextRequest) {
         thumbnailUrl = `/uploads/${fileName}`;
       }
 
-      // Read metadata from file on disk (sharp reads efficiently with file path)
+      // Read metadata from the already-rotated file
       let realWidth = 800;
       let realHeight = 600;
       let blurDataUrl: string | null = null;

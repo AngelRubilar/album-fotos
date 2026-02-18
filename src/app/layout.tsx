@@ -46,9 +46,9 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
           <ToastProvider>
-            <div className="flex min-h-screen">
+            <div className={`flex h-screen overflow-hidden`}>
               <Sidebar />
-              <main id="main-content" className="flex-1 min-h-screen overflow-y-auto glass-bg">
+              <main id="main-content" className="flex-1 h-screen overflow-y-auto glass-bg">
                 <ErrorBoundary>
                   {children}
                 </ErrorBoundary>
