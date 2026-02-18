@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useToast } from "@/components/Toast";
 import AlbumPreview from "@/components/AlbumPreview";
+import SearchBar from "@/components/SearchBar";
+import { Skeleton, AlbumCardSkeleton } from "@/components/Skeleton";
 import { FadeUp, StaggerContainer, StaggerItem } from "@/components/MotionWrap";
 
 const ImageGallery = dynamic(() => import("@/components/ImageGallery"), {
@@ -23,8 +26,10 @@ const PAGE_SIZE = 50;
 
 export default function AlbumPage({ params }: { params: Promise<{ year: string }> }) {
   const { t } = useTheme();
+  const { addToast } = useToast();
   const [year, setYear] = useState('');
   const [images, setImages] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [subAlbums, setSubAlbums] = useState<any[]>([]);
@@ -95,10 +100,11 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
       if (data.success) {
         setImages(prev => prev.filter(img => img.id !== imageId));
         setTotalImages(prev => prev - 1);
+        addToast('Imagen eliminada', 'success');
       } else {
-        alert('Error: ' + data.error);
+        addToast('Error: ' + data.error, 'error');
       }
-    } catch { alert('Error al eliminar'); }
+    } catch { addToast('Error al eliminar', 'error'); }
   };
 
   useEffect(() => {
@@ -119,10 +125,28 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
       .finally(() => setLoading(false));
   }, [year]);
 
+  const filteredAlbums = useMemo(() =>
+    subAlbums.filter(a =>
+      a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [subAlbums, searchQuery]
+  );
+
   if (!year || loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${t.gradientBg}`}>
-        <div className={`animate-spin rounded-full h-8 w-8 border-2 border-t-transparent ${t.border}`} />
+      <div className={`min-h-screen ${t.gradientBg}`}>
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="mb-8">
+            <Skeleton className="h-4 w-32 mb-3" />
+            <Skeleton className="h-7 w-24" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <AlbumCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -197,7 +221,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
                     a.click();
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
-                  } catch (e) { alert(`Error: ${(e as Error).message}`); }
+                  } catch (e) { addToast(`Error: ${(e as Error).message}`, 'error'); }
                 }}
                 className={`text-sm ${t.accent} hover:underline inline-flex items-center gap-1`}
               >
@@ -231,10 +255,17 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
           </div>
         )}
 
+        {/* Busqueda de albums */}
+        {!selectedAlbum && subAlbums.length > 2 && (
+          <div className="mb-6 max-w-sm">
+            <SearchBar onSearch={setSearchQuery} placeholder="Buscar album..." />
+          </div>
+        )}
+
         {/* Album cards */}
-        {!selectedAlbum && subAlbums.length > 0 && (
+        {!selectedAlbum && filteredAlbums.length > 0 && (
           <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {subAlbums.map((album) => (
+            {filteredAlbums.map((album) => (
               <StaggerItem
                 key={album.id}
                 onClick={() => loadAlbumImages(album.id)}
@@ -348,7 +379,13 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
           </div>
         )}
 
-        {!selectedAlbum && subAlbums.length === 0 && (
+        {!selectedAlbum && filteredAlbums.length === 0 && searchQuery && (
+          <div className="text-center py-16">
+            <p className={`${t.textMuted}`}>No se encontraron albums para &ldquo;{searchQuery}&rdquo;</p>
+          </div>
+        )}
+
+        {!selectedAlbum && subAlbums.length === 0 && !searchQuery && (
           <div className="text-center py-20">
             <div className={`inline-flex items-center justify-center w-20 h-20 rounded-3xl ${t.glassCard} mb-6`}>
               <svg className={`w-10 h-10 ${t.textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

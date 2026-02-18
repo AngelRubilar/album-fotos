@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
 import AlbumPreview from "@/components/AlbumPreview";
+import SearchBar from "@/components/SearchBar";
+import { Skeleton, AlbumCardSkeleton } from "@/components/Skeleton";
 import { FadeUp, StaggerContainer, StaggerItem } from "@/components/MotionWrap";
 
 interface Year {
@@ -16,6 +18,7 @@ export default function Home() {
   const { t } = useTheme();
   const [years, setYears] = useState<Year[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetch('/api/years')
@@ -25,10 +28,25 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
+  const filteredYears = useMemo(() =>
+    years.filter(y => String(y.year).includes(searchQuery)),
+    [years, searchQuery]
+  );
+
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${t.gradientBg}`}>
-        <div className={`animate-spin rounded-full h-8 w-8 border-2 border-t-transparent ${t.border}`} />
+      <div className={`min-h-screen ${t.gradientBg}`}>
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="mb-10">
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <AlbumCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -42,8 +60,15 @@ export default function Home() {
           <p className={`${t.textMuted}`}>Tus recuerdos organizados por momentos</p>
         </FadeUp>
 
+        {/* Busqueda */}
+        {years.length > 0 && (
+          <div className="mb-6 max-w-sm">
+            <SearchBar onSearch={setSearchQuery} placeholder="Buscar por año..." />
+          </div>
+        )}
+
         {/* Year Cards */}
-        {years.length === 0 ? (
+        {filteredYears.length === 0 && !searchQuery ? (
           <div className="text-center py-20">
             <div className={`inline-flex items-center justify-center w-20 h-20 rounded-3xl ${t.glassCard} mb-6`}>
               <svg className={`w-10 h-10 ${t.textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,9 +81,13 @@ export default function Home() {
               <button className="btn-glass-accent px-6 py-3 rounded-xl text-white font-medium">Subir Fotos</button>
             </Link>
           </div>
+        ) : filteredYears.length === 0 && searchQuery ? (
+          <div className="text-center py-16">
+            <p className={`${t.textMuted}`}>No se encontraron resultados para &ldquo;{searchQuery}&rdquo;</p>
+          </div>
         ) : (
           <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {years.map((yearData) => (
+            {filteredYears.map((yearData) => (
               <StaggerItem key={yearData.year}>
                 <Link
                   href={`/album/${yearData.year}`}
