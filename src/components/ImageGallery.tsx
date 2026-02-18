@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -47,6 +47,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
   const [editingDesc, setEditingDesc] = useState(false);
   const [descValue, setDescValue] = useState('');
   const [saving, setSaving] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setIdx(currentIndex); }, [currentIndex]);
   useEffect(() => { setShowInfo(false); setEditingDesc(false); }, [idx]);
@@ -59,6 +60,14 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
     onImageChange?.(next);
     setLoading(true);
   }, [idx, images.length, onImageChange]);
+
+  // Focus management: capturar y restaurar focus
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousFocus = document.activeElement as HTMLElement;
+    modalRef.current?.focus();
+    return () => { previousFocus?.focus(); };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -113,11 +122,15 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
     <AnimatePresence>
     {isOpen && images.length > 0 && (
     <motion.div
+      ref={modalRef}
       className="fixed inset-0 z-50"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
+      tabIndex={-1}
+      role="dialog"
+      aria-label="Galeria de imagenes"
     >
       <div className="absolute inset-0 bg-black/85 backdrop-blur-2xl" onClick={() => { if (showInfo) setShowInfo(false); else onClose(); }} />
 
@@ -133,6 +146,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
             <button
               onClick={() => setShowInfo(p => !p)}
               className={`p-2 rounded-xl transition-all duration-200 ${showInfo ? 'bg-white/20 backdrop-blur-sm text-white shadow-lg shadow-white/5' : 'hover:bg-white/10 text-white/60 hover:text-white'}`}
+              aria-label="Ver informacion"
               title="Info (I)"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,7 +154,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
               </svg>
             </button>
             {/* Close button */}
-            <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white">
+            <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white" aria-label="Cerrar galeria">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -186,12 +200,12 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
             </AnimatePresence>
             {images.length > 1 && (
               <>
-                <button onClick={() => go(-1)} className="absolute left-4 p-3 rounded-2xl bg-black/20 backdrop-blur-md hover:bg-white/10 transition-all text-white/50 hover:text-white border border-white/[0.06]">
+                <button onClick={() => go(-1)} className="absolute left-4 p-3 rounded-2xl bg-black/20 backdrop-blur-md hover:bg-white/10 transition-all text-white/50 hover:text-white border border-white/[0.06]" aria-label="Imagen anterior">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <button onClick={() => go(1)} className="absolute right-4 p-3 rounded-2xl bg-black/20 backdrop-blur-md hover:bg-white/10 transition-all text-white/50 hover:text-white border border-white/[0.06]">
+                <button onClick={() => go(1)} className="absolute right-4 p-3 rounded-2xl bg-black/20 backdrop-blur-md hover:bg-white/10 transition-all text-white/50 hover:text-white border border-white/[0.06]" aria-label="Imagen siguiente">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -298,7 +312,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
                     i === idx ? 'ring-2 ring-white scale-110' : 'opacity-40 hover:opacity-70'
                   }`}
                 >
-                  <Image src={image.thumbnailUrl || image.fileUrl} alt="" width={48} height={48} className="w-full h-full object-cover" />
+                  <Image src={image.thumbnailUrl || image.fileUrl} alt={`Miniatura de ${image.originalName}`} width={48} height={48} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

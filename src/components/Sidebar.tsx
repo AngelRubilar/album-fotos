@@ -35,6 +35,7 @@ export default function Sidebar() {
       <button
         className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl ${t.glassCard}`}
         onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label={mobileOpen ? 'Cerrar menu' : 'Abrir menu'}
       >
         <svg className={`w-5 h-5 ${t.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           {mobileOpen ? (
@@ -139,6 +140,7 @@ export default function Sidebar() {
           <button
             onClick={toggleTheme}
             className={`sidebar-nav-item w-full ${t.navItem}`}
+            aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           >
             {isDark ? (
               <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

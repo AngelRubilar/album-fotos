@@ -310,7 +310,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                     </svg>
                   </div>
-                  <button onClick={e => { e.stopPropagation(); deleteImage(image.id); }} className={`absolute top-2 right-2 p-1.5 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-all ${t.danger}`}>
+                  <button onClick={e => { e.stopPropagation(); deleteImage(image.id); }} className={`absolute top-2 right-2 p-1.5 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-all ${t.danger}`} aria-label="Eliminar imagen">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -339,7 +339,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                     </svg>
                   </div>
-                  <button onClick={e => { e.stopPropagation(); deleteImage(image.id); }} className={`absolute top-2 right-2 p-1.5 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-all ${t.danger}`}>
+                  <button onClick={e => { e.stopPropagation(); deleteImage(image.id); }} className={`absolute top-2 right-2 p-1.5 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-all ${t.danger}`} aria-label="Eliminar imagen">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
