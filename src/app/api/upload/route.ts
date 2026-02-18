@@ -82,12 +82,24 @@ export async function POST(request: NextRequest) {
       // Read metadata from file on disk (sharp reads efficiently with file path)
       let realWidth = 800;
       let realHeight = 600;
+      let blurDataUrl: string | null = null;
       try {
         const metadata = await sharp(filePath).metadata();
         realWidth = metadata.width || 800;
         realHeight = metadata.height || 600;
       } catch {
         console.warn(`Could not read image metadata for ${fileName}, using defaults`);
+      }
+
+      // Generate LQIP blur placeholder (~20px base64)
+      try {
+        const blurBuffer = await sharp(filePath)
+          .resize(20, 20, { fit: 'inside' })
+          .jpeg({ quality: 40 })
+          .toBuffer();
+        blurDataUrl = `data:image/jpeg;base64,${blurBuffer.toString('base64')}`;
+      } catch {
+        console.warn(`Could not generate blur placeholder for ${fileName}`);
       }
 
       // Determinar el álbum a usar
@@ -144,7 +156,8 @@ export async function POST(request: NextRequest) {
           width: realWidth,
           height: realHeight,
           mimeType: file.type,
-          description: ''
+          description: '',
+          blurDataUrl,
         }
       });
 

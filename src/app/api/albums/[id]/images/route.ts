@@ -51,6 +51,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           fileSize: true,
           mimeType: true,
           uploadedAt: true,
+          blurDataUrl: true,
         },
         orderBy: { uploadedAt: 'desc' },
         skip,

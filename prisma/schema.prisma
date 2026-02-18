@@ -45,6 +45,7 @@ model Image {
   height          Int
   mimeType        String
   description     String?
+  blurDataUrl     String?
   uploadedAt      DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
