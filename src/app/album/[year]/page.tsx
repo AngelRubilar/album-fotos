@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import AlbumPreview from "@/components/AlbumPreview";
+import { FadeUp, StaggerContainer, StaggerItem } from "@/components/MotionWrap";
 
 const ImageGallery = dynamic(() => import("@/components/ImageGallery"), {
   loading: () => (
@@ -129,7 +131,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Breadcrumb + Title */}
-        <div className="mb-8 md:ml-0 ml-10">
+        <FadeUp className="mb-8 md:ml-0 ml-10">
           <nav className={`flex items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
             <Link href="/" className="hover:underline">Inicio</Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +155,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
           {selectedAlbum && selectedAlbumData?.description && (
             <p className={`text-sm ${t.textMuted} mt-1`}>{selectedAlbumData.description}</p>
           )}
-        </div>
+        </FadeUp>
 
         {/* Album tabs */}
         {selectedAlbum && subAlbums.length > 1 && (
@@ -231,13 +233,12 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
 
         {/* Album cards */}
         {!selectedAlbum && subAlbums.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {subAlbums.map((album, index) => (
-              <div
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {subAlbums.map((album) => (
+              <StaggerItem
                 key={album.id}
                 onClick={() => loadAlbumImages(album.id)}
-                className={`cursor-pointer rounded-2xl overflow-hidden ${t.glassCard} glass-card glass-glow animate-fade-up`}
-                style={{ animationDelay: `${index * 60}ms` }}
+                className={`cursor-pointer rounded-2xl overflow-hidden ${t.glassCard} glass-card glass-glow`}
               >
                 <div className="aspect-[16/10] relative overflow-hidden">
                   <AlbumPreview albumId={album.id} imageCount={album.imageCount} className="w-full h-full" />
@@ -255,16 +256,22 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
                     <Link href={`/upload?album=${album.id}`} onClick={e => e.stopPropagation()} className={`text-sm ${t.accent}`}>Subir</Link>
                   </div>
                 </div>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         )}
 
         {/* Photos: Masonry - uses thumbnails for performance */}
         {selectedAlbum && images.length > 0 && layoutMode === 'masonry' && (
           <div className="masonry">
             {images.map((image, index) => (
-              <div key={image.id} className="masonry-item animate-fade-up group">
+              <motion.div
+                key={image.id}
+                className="masonry-item group"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.5) }}
+              >
                 <div className="photo-card cursor-pointer relative" onClick={() => { setGalleryIndex(index); setGalleryOpen(true); }}>
                   <Image src={image.thumbnailUrl || image.fileUrl || '/placeholder.jpg'} alt={image.originalName || ''} width={600} height={0} className="w-full h-auto block rounded-xl" sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" />
                   <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
@@ -278,7 +285,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
                     </svg>
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
@@ -287,7 +294,13 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
         {selectedAlbum && images.length > 0 && layoutMode === 'grid' && (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
             {images.map((image, index) => (
-              <div key={image.id} className="animate-fade-up group" style={{ animationDelay: `${Math.min(index * 30, 400)}ms` }}>
+              <motion.div
+                key={image.id}
+                className="group"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.5) }}
+              >
                 <div className="photo-card cursor-pointer relative aspect-square" onClick={() => { setGalleryIndex(index); setGalleryOpen(true); }}>
                   <Image src={image.thumbnailUrl || image.fileUrl || '/placeholder.jpg'} alt={image.originalName || ''} fill className="object-cover rounded-xl" sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" />
                   <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
@@ -301,7 +314,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
                     </svg>
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}

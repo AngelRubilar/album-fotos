@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
 import AlbumPreview from "@/components/AlbumPreview";
+import { FadeUp, StaggerContainer, StaggerItem } from "@/components/MotionWrap";
 
 interface Year {
   year: number;
@@ -36,10 +37,10 @@ export default function Home() {
     <div className={`min-h-screen transition-colors duration-300 ${t.gradientBg}`}>
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-10 md:ml-0 ml-10">
+        <FadeUp className="mb-10 md:ml-0 ml-10">
           <h1 className={`text-3xl font-bold ${t.text} mb-1`}>Bienvenido</h1>
           <p className={`${t.textMuted}`}>Tus recuerdos organizados por momentos</p>
-        </div>
+        </FadeUp>
 
         {/* Year Cards */}
         {years.length === 0 ? (
@@ -56,40 +57,40 @@ export default function Home() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {years.map((yearData, index) => (
-              <Link
-                key={yearData.year}
-                href={`/album/${yearData.year}`}
-                className="group block animate-fade-up"
-                style={{ animationDelay: `${index * 80}ms` }}
-              >
-                <div className={`rounded-2xl overflow-hidden ${t.glassCard} glass-card glass-glow`}>
-                  <div className="aspect-[4/3] relative overflow-hidden">
-                    <AlbumPreview year={yearData.year} className="w-full h-full" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <h2 className="text-4xl font-bold text-white drop-shadow-lg">{yearData.year}</h2>
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {years.map((yearData) => (
+              <StaggerItem key={yearData.year}>
+                <Link
+                  href={`/album/${yearData.year}`}
+                  className="group block"
+                >
+                  <div className={`rounded-2xl overflow-hidden ${t.glassCard} glass-card glass-glow`}>
+                    <div className="aspect-[4/3] relative overflow-hidden">
+                      <AlbumPreview year={yearData.year} className="w-full h-full" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <h2 className="text-4xl font-bold text-white drop-shadow-lg">{yearData.year}</h2>
+                      </div>
+                      <div className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-medium bg-black/30 backdrop-blur-md text-white border border-white/20">
+                        {yearData.totalImages} fotos
+                      </div>
                     </div>
-                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-medium bg-black/30 backdrop-blur-md text-white border border-white/20">
-                      {yearData.totalImages} fotos
+                    <div className="px-5 py-4">
+                      <p className={`text-sm ${t.textMuted}`}>
+                        {yearData.albumCount} album{yearData.albumCount !== 1 ? 'es' : ''}
+                      </p>
+                      <span className={`text-sm font-medium ${t.accent} inline-flex items-center gap-1 mt-2 group-hover:gap-2 transition-all`}>
+                        Explorar
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </span>
                     </div>
                   </div>
-                  <div className="px-5 py-4">
-                    <p className={`text-sm ${t.textMuted}`}>
-                      {yearData.albumCount} album{yearData.albumCount !== 1 ? 'es' : ''}
-                    </p>
-                    <span className={`text-sm font-medium ${t.accent} inline-flex items-center gap-1 mt-2 group-hover:gap-2 transition-all`}>
-                      Explorar
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-              </Link>
+                </Link>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         )}
       </div>
     </div>
