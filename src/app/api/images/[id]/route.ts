@@ -9,6 +9,30 @@ interface RouteParams {
   }>;
 }
 
+// GET /api/images/[id] - Obtener imagen con datos del album
+export async function GET(_request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+
+    const image = await prisma.image.findUnique({
+      where: { id },
+      include: {
+        album: {
+          select: { id: true, title: true, year: true },
+        },
+      },
+    });
+
+    if (!image) {
+      return NextResponse.json({ success: false, error: 'Imagen no encontrada' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: image });
+  } catch {
+    return NextResponse.json({ success: false, error: 'Error interno' }, { status: 500 });
+  }
+}
+
 // PATCH /api/images/[id] - Actualizar descripcion de imagen
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {

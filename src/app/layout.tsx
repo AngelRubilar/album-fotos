@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider } from "@/components/Toast";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Sidebar from "@/components/Sidebar";
 
 const geistSans = Geist({
@@ -38,12 +39,17 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}` }} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-blue-600 focus:text-white">
+          Saltar al contenido
+        </a>
         <ThemeProvider>
           <ToastProvider>
             <div className="flex min-h-screen">
               <Sidebar />
-              <main className="flex-1 min-h-screen overflow-y-auto glass-bg">
-                {children}
+              <main id="main-content" className="flex-1 min-h-screen overflow-y-auto glass-bg">
+                <ErrorBoundary>
+                  {children}
+                </ErrorBoundary>
               </main>
             </div>
           </ToastProvider>
