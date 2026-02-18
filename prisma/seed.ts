@@ -14,8 +14,8 @@ async function main() {
   ];
 
   for (const albumData of albums) {
-    const existingAlbum = await prisma.album.findUnique({
-      where: { year: albumData.year }
+    const existingAlbum = await prisma.album.findFirst({
+      where: { year: albumData.year, title: albumData.title }
     });
 
     if (!existingAlbum) {
