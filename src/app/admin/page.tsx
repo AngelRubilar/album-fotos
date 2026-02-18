@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useToast } from "@/components/Toast";
 import { FadeUp, StaggerContainer, StaggerItem } from "@/components/MotionWrap";
 
 interface Album {
@@ -17,6 +18,7 @@ interface Album {
 
 export default function AdminPage() {
   const { t } = useTheme();
+  const { addToast } = useToast();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -31,7 +33,7 @@ export default function AdminPage() {
   }, []);
 
   const createAlbum = async () => {
-    if (!newAlbum.title.trim()) { alert('El titulo es requerido'); return; }
+    if (!newAlbum.title.trim()) { addToast('El titulo es requerido', 'error'); return; }
     try {
       const res = await fetch('/api/albums', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAlbum) });
       const data = await res.json();
@@ -39,8 +41,9 @@ export default function AdminPage() {
         setAlbums(prev => [...prev, data.data]);
         setNewAlbum({ year: new Date().getFullYear(), title: '', description: '', subAlbum: '' });
         setShowForm(false);
-      } else { alert(data.error || 'Error'); }
-    } catch { alert('Error al crear album'); }
+        addToast('Album creado exitosamente', 'success');
+      } else { addToast(data.error || 'Error', 'error'); }
+    } catch { addToast('Error al crear album', 'error'); }
   };
 
   const deleteAlbum = async (id: string) => {
@@ -48,9 +51,11 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/albums/${id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (data.success) setAlbums(prev => prev.filter(a => a.id !== id));
-      else alert(data.error || 'Error');
-    } catch { alert('Error al eliminar'); }
+      if (data.success) {
+        setAlbums(prev => prev.filter(a => a.id !== id));
+        addToast('Album eliminado', 'success');
+      } else { addToast(data.error || 'Error', 'error'); }
+    } catch { addToast('Error al eliminar', 'error'); }
   };
 
   if (loading) {

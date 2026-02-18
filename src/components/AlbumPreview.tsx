@@ -13,6 +13,8 @@ interface AlbumPreviewProps {
 const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, className = '' }: AlbumPreviewProps) {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hovered, setHovered] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -20,7 +22,6 @@ const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, cla
     const fetchImages = async () => {
       try {
         if (albumId) {
-          // Single fetch: get 4 images for this specific album
           const res = await fetch(`/api/albums/${albumId}/images?limit=4`);
           const data = await res.json();
           if (!isMounted) return;
@@ -31,7 +32,6 @@ const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, cla
             setPreviewImages(imgs);
           }
         } else if (year) {
-          // Single fetch: dedicated preview endpoint replaces N+1 cascade
           const res = await fetch(`/api/albums/year/${year}/preview`);
           const data = await res.json();
           if (!isMounted) return;
@@ -47,6 +47,15 @@ const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, cla
     return () => { isMounted = false; };
   }, [albumId, year, imageCount]);
 
+  // Slideshow automático al hacer hover
+  useEffect(() => {
+    if (!hovered || previewImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % previewImages.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [hovered, previewImages.length]);
+
   if (loading) {
     return <div className={`bg-gray-200 dark:bg-neutral-800 animate-pulse ${className}`} />;
   }
@@ -61,26 +70,38 @@ const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, cla
     );
   }
 
-  if (previewImages.length === 1) {
-    return (
-      <div className={`relative overflow-hidden ${className}`}>
-        <Image src={previewImages[0]} alt="Preview" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
-      </div>
-    );
-  }
-
+  // Modo slideshow: imagen única con crossfade
   return (
-    <div className={`relative overflow-hidden ${className}`}>
-      <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-[2px]">
-        {previewImages.slice(0, 4).map((src, i) => (
-          <div key={i} className="relative overflow-hidden">
-            <Image src={src} alt="" fill className="object-cover" sizes="25vw" />
-          </div>
-        ))}
-        {previewImages.length < 4 && Array.from({ length: 4 - previewImages.length }).map((_, i) => (
-          <div key={`p-${i}`} className="bg-gray-200 dark:bg-neutral-800" />
-        ))}
-      </div>
+    <div
+      className={`relative overflow-hidden ${className}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setActiveIndex(0); }}
+    >
+      {previewImages.map((src, i) => (
+        <Image
+          key={src}
+          src={src}
+          alt=""
+          fill
+          className={`object-cover transition-opacity duration-700 ${
+            i === activeIndex ? 'opacity-100' : 'opacity-0'
+          }`}
+          sizes="(max-width: 768px) 100vw, 50vw"
+        />
+      ))}
+      {/* Indicadores de slideshow */}
+      {hovered && previewImages.length > 1 && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+          {previewImages.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i === activeIndex ? 'bg-white w-4' : 'bg-white/40 w-1.5'
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 });

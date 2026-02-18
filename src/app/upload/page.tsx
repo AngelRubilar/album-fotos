@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useToast } from "@/components/Toast";
 import { FadeUp } from "@/components/MotionWrap";
 
 function UploadContent() {
   const { t } = useTheme();
+  const { addToast } = useToast();
   const searchParams = useSearchParams();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -54,7 +56,7 @@ function UploadContent() {
 
   const handleUpload = async () => {
     if (!selectedFiles.length) return;
-    if (!selectedAlbum) { alert('Selecciona un album'); return; }
+    if (!selectedAlbum) { addToast('Selecciona un album', 'error'); return; }
     setUploading(true);
     setUploadProgress(0);
     try {
@@ -74,9 +76,13 @@ function UploadContent() {
         setUploadProgress(Math.round(((i + batch.length) / selectedFiles.length) * 100));
       }
       setUploadProgress(100);
-      alert(failedCount === 0 ? `Se subieron ${uploadedCount} imagen(es).` : `Se subieron ${uploadedCount} imagen(es). ${failedCount} fallaron.`);
+      if (failedCount === 0) {
+        addToast(`Se subieron ${uploadedCount} imagen(es)`, 'success');
+      } else {
+        addToast(`${uploadedCount} subidas, ${failedCount} fallaron`, 'error');
+      }
       setSelectedFiles([]);
-    } catch { alert('Error al subir las imagenes'); }
+    } catch { addToast('Error al subir las imagenes', 'error'); }
     finally { setUploading(false); setUploadProgress(0); }
   };
 
@@ -118,9 +124,23 @@ function UploadContent() {
 
           {selectedFiles.length > 0 && (
             <div className={`${t.glassCard} rounded-2xl p-6`}>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-3">
                 <h3 className={`font-semibold ${t.text}`}>{selectedFiles.length} archivo(s)</h3>
                 <button onClick={() => setSelectedFiles([])} className={`text-sm ${t.danger}`}>Limpiar</button>
+              </div>
+              {/* Barra de tamaño total */}
+              <div className="flex items-center gap-3 mb-4">
+                <span className={`text-sm ${t.textMuted} whitespace-nowrap`}>
+                  {(selectedFiles.reduce((a, f) => a + f.size, 0) / 1024 / 1024).toFixed(1)} MB
+                </span>
+                <div className={`flex-1 h-1.5 rounded-full ${t.inputBg}`}>
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      selectedFiles.reduce((a, f) => a + f.size, 0) > 100 * 1024 * 1024 ? 'bg-red-500' : 'bg-blue-500'
+                    }`}
+                    style={{ width: `${Math.min((selectedFiles.reduce((a, f) => a + f.size, 0) / (100 * 1024 * 1024)) * 100, 100)}%` }}
+                  />
+                </div>
               </div>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {selectedFiles.map((file, i) => (
