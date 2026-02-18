@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/components/Toast";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import Sidebar from "@/components/Sidebar";
+import ConditionalSidebar from "@/components/ConditionalSidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,10 +43,9 @@ export default function RootLayout({
           Saltar al contenido
         </a>
         <ThemeProvider>
-          <AuthProvider>
           <ToastProvider>
             <div className={`flex h-screen overflow-hidden`}>
-              <Sidebar />
+              <ConditionalSidebar />
               <main id="main-content" className="flex-1 h-screen overflow-y-auto glass-bg">
                 <ErrorBoundary>
                   {children}
@@ -55,7 +53,6 @@ export default function RootLayout({
               </main>
             </div>
           </ToastProvider>
-          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
