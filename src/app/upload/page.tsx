@@ -80,7 +80,7 @@ function UploadContent() {
   };
 
   return (
-    <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
+    <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="mb-8 md:ml-0 ml-10">
           <nav className={`flex items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
@@ -94,7 +94,7 @@ function UploadContent() {
         </div>
 
         <div className="space-y-6">
-          <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-6`}>
+          <div className={`${t.glassCard} rounded-2xl p-6`}>
             <label className={`block text-sm font-medium ${t.text} mb-2`}>Album de destino</label>
             <select value={selectedAlbum} onChange={e => setSelectedAlbum(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-blue-500 focus:outline-none`}>
               <option value="">-- Selecciona un album --</option>
@@ -102,21 +102,21 @@ function UploadContent() {
             </select>
           </div>
 
-          <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-8`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
-            <div className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${dragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : t.inputBorder}`}>
+          <div className={`${t.glassCard} rounded-2xl p-8`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
+            <div className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${dragActive ? 'border-blue-500 bg-blue-500/10 backdrop-blur-sm scale-[1.01]' : t.inputBorder}`}>
               <svg className={`w-12 h-12 mx-auto mb-4 ${t.textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               <p className={`font-medium ${t.text} mb-1`}>Arrastra tus fotos aqui</p>
               <p className={`text-sm ${t.textMuted} mb-4`}>o haz clic para seleccionar</p>
               <input type="file" multiple accept="image/*" onChange={handleFileInput} className="hidden" id="file-input" />
-              <label htmlFor="file-input" className={`inline-flex items-center px-5 py-2.5 ${t.accentBg} text-white rounded-xl cursor-pointer hover:opacity-90 transition-opacity text-sm font-medium`}>Seleccionar Archivos</label>
+              <label htmlFor="file-input" className="inline-flex items-center px-5 py-2.5 btn-glass-accent text-white rounded-xl cursor-pointer text-sm font-medium">Seleccionar Archivos</label>
               <p className={`text-xs ${t.textMuted} mt-4`}>JPG, PNG, GIF, WebP (max 10MB)</p>
             </div>
           </div>
 
           {selectedFiles.length > 0 && (
-            <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-6`}>
+            <div className={`${t.glassCard} rounded-2xl p-6`}>
               <div className="flex justify-between items-center mb-4">
                 <h3 className={`font-semibold ${t.text}`}>{selectedFiles.length} archivo(s)</h3>
                 <button onClick={() => setSelectedFiles([])} className={`text-sm ${t.danger}`}>Limpiar</button>
@@ -148,7 +148,7 @@ function UploadContent() {
           )}
 
           {uploading && (
-            <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-6`}>
+            <div className={`${t.glassCard} rounded-2xl p-6`}>
               <p className={`text-sm font-medium ${t.text} mb-3`}>Subiendo...</p>
               <div className={`w-full ${t.inputBg} rounded-full h-2`}>
                 <div className={`${t.accentBg} h-2 rounded-full transition-all duration-300`} style={{ width: `${uploadProgress}%` }} />

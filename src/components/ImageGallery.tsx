@@ -105,7 +105,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
 
       <div className="relative w-full h-full flex flex-col">
         {/* Top bar */}
-        <div className="flex items-center justify-between px-5 py-4 relative z-10">
+        <div className="flex items-center justify-between px-5 py-4 relative z-10 bg-black/20 backdrop-blur-md">
           <div>
             <p className="text-white text-sm font-medium truncate max-w-[280px]">{img.originalName}</p>
             <p className="text-white/40 text-xs">{idx + 1} / {images.length}</p>
@@ -114,7 +114,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
             {/* Info button */}
             <button
               onClick={() => setShowInfo(p => !p)}
-              className={`p-2 rounded-xl transition-colors ${showInfo ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white/60 hover:text-white'}`}
+              className={`p-2 rounded-xl transition-all duration-200 ${showInfo ? 'bg-white/20 backdrop-blur-sm text-white shadow-lg shadow-white/5' : 'hover:bg-white/10 text-white/60 hover:text-white'}`}
               title="Info (I)"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,12 +150,12 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
             />
             {images.length > 1 && (
               <>
-                <button onClick={() => go(-1)} className="absolute left-4 p-3 rounded-2xl hover:bg-white/10 transition-colors text-white/50 hover:text-white">
+                <button onClick={() => go(-1)} className="absolute left-4 p-3 rounded-2xl bg-black/20 backdrop-blur-md hover:bg-white/10 transition-all text-white/50 hover:text-white border border-white/[0.06]">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <button onClick={() => go(1)} className="absolute right-4 p-3 rounded-2xl hover:bg-white/10 transition-colors text-white/50 hover:text-white">
+                <button onClick={() => go(1)} className="absolute right-4 p-3 rounded-2xl bg-black/20 backdrop-blur-md hover:bg-white/10 transition-all text-white/50 hover:text-white border border-white/[0.06]">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -166,7 +166,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
 
           {/* Info panel */}
           {showInfo && (
-            <div className="w-80 bg-black/60 backdrop-blur-xl border-l border-white/10 overflow-y-auto relative z-10 animate-slide-up">
+            <div className="w-80 bg-white/[0.06] backdrop-blur-2xl border-l border-white/[0.1] overflow-y-auto relative z-10">
               <div className="p-5 space-y-5">
                 <h3 className="text-white font-semibold text-sm">Informacion</h3>
 
@@ -242,7 +242,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
         </div>
 
         {/* Bottom - thumbnail strip */}
-        <div className="px-5 py-4 relative z-10">
+        <div className="px-5 py-4 relative z-10 bg-black/20 backdrop-blur-md">
           {!showInfo && img.description && <p className="text-center text-white/70 text-sm mb-3">{img.description}</p>}
           {images.length > 1 && (
             <div className="flex justify-center gap-1.5 overflow-x-auto thumbnail-scroll py-1 max-w-2xl mx-auto">

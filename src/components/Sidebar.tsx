@@ -33,7 +33,7 @@ export default function Sidebar() {
     <>
       {/* Mobile hamburger */}
       <button
-        className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl ${t.cardBg} ${t.cardShadow} ${t.cardBorder}`}
+        className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl ${t.glassCard}`}
         onClick={() => setMobileOpen(!mobileOpen)}
       >
         <svg className={`w-5 h-5 ${t.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +57,7 @@ export default function Sidebar() {
         flex flex-col
         transition-transform duration-300 ease-out
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        shrink-0
+        shrink-0 glass-glow
       `}>
         {/* Header */}
         <div className="px-5 pt-6 pb-4">

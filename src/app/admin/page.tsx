@@ -54,14 +54,14 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${t.bg}`}>
+      <div className={`min-h-screen flex items-center justify-center ${t.gradientBg}`}>
         <div className={`animate-spin rounded-full h-8 w-8 border-2 border-t-transparent ${t.border}`} />
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
+    <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="mb-8 md:ml-0 ml-10">
           <nav className={`flex items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
@@ -73,14 +73,14 @@ export default function AdminPage() {
           </nav>
           <div className="flex items-center justify-between">
             <h1 className={`text-2xl font-bold ${t.text}`}>Administrar Albumes</h1>
-            <button onClick={() => setShowForm(!showForm)} className={`px-4 py-2 rounded-xl text-sm font-medium text-white ${t.accentBg} hover:opacity-90 transition-opacity`}>
+            <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 rounded-xl text-sm font-medium text-white btn-glass-accent">
               {showForm ? 'Cancelar' : 'Crear Album'}
             </button>
           </div>
         </div>
 
         {showForm && (
-          <div className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-6 mb-6`}>
+          <div className={`${t.glassCard} rounded-2xl p-6 mb-6`}>
             <h3 className={`font-semibold ${t.text} mb-4`}>Nuevo Album</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -108,19 +108,19 @@ export default function AdminPage() {
 
         {albums.length === 0 ? (
           <div className="text-center py-20">
-            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl ${t.cardBg} ${t.cardBorder} mb-5`}>
-              <svg className={`w-8 h-8 ${t.textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-3xl ${t.glassCard} mb-6`}>
+              <svg className={`w-10 h-10 ${t.textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
             </div>
             <h3 className={`text-lg font-semibold ${t.text} mb-2`}>Sin albumes</h3>
             <p className={`${t.textMuted} mb-5`}>Crea tu primer album para empezar.</p>
-            <button onClick={() => setShowForm(true)} className={`px-5 py-2 rounded-xl text-white font-medium ${t.accentBg}`}>Crear Album</button>
+            <button onClick={() => setShowForm(true)} className="px-5 py-2 rounded-xl text-white font-medium btn-glass-accent">Crear Album</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {albums.map(album => (
-              <div key={album.id} className={`${t.cardBg} ${t.cardBorder} ${t.cardShadow} rounded-2xl p-5`}>
+              <div key={album.id} className={`${t.glassCard} rounded-2xl p-5`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -141,7 +141,7 @@ export default function AdminPage() {
                   <span>{new Date(album.createdAt).toLocaleDateString()}</span>
                 </div>
                 <Link href={`/album/${album.year}`}>
-                  <button className={`w-full px-4 py-2 rounded-xl text-sm font-medium text-white ${t.accentBg} hover:opacity-90 transition-opacity`}>Ver Album</button>
+                  <button className="w-full px-4 py-2 rounded-xl text-sm font-medium text-white btn-glass-accent">Ver Album</button>
                 </Link>
               </div>
             ))}
