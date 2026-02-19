@@ -1,5 +1,31 @@
 @import "tailwindcss";
 
+/* ===== SIDEBAR: posicionamiento base (funciona antes de hidratación JS) ===== */
+.sidebar-base {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 15rem;      /* w-60 = 240px */
+  z-index: 40;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);  /* oculto en móvil */
+  transition: transform 0.3s ease-out;
+}
+
+@media (min-width: 768px) {
+  .sidebar-base {
+    position: sticky;
+    transform: translateX(0);
+  }
+}
+
+.sidebar-base.sidebar-open {
+  transform: translateX(0);
+}
+
 /* ===== MASONRY LAYOUT (CSS Grid con alturas naturales) ===== */
 .masonry {
   display: grid;

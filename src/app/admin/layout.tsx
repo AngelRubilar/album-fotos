@@ -59,14 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const sidebar = (
-    <aside className={`
-      fixed md:sticky top-0 left-0 h-screen w-60 z-40
-      ${t.sidebarBg}
-      flex flex-col
-      transition-all duration-300 ease-out
-      ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-      shrink-0 glass-glow
-    `}>
+    <aside className={`sidebar-base ${mobileOpen ? 'sidebar-open' : ''} ${t.sidebarBg} glass-glow`}>
       {/* Header */}
       <div className="px-5 pt-6 pb-4">
         <Link href="/admin" className="block">
