@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 
 interface AlbumPreviewProps {
   albumId?: string;
@@ -27,13 +27,22 @@ const AlbumPreview = memo(function AlbumPreview({
   coverFocalPoint,
 }: AlbumPreviewProps) {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Si hay portada definida no necesitamos esperar a ninguna API para mostrar algo
+  const [loading, setLoading] = useState(!coverImageUrl);
   const [hovered, setHovered] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const fetchedRef = useRef(false);
 
+  // Fetch de imágenes de preview:
+  // - Si NO hay portada: se hace inmediatamente (necesitamos algo para mostrar)
+  // - Si HAY portada: se difiere al primer hover (solo sirve para el slideshow)
+  // En móvil (sin hover) esto elimina todas las llamadas API cuando hay portada.
   useEffect(() => {
-    let isMounted = true;
+    const shouldFetch = coverImageUrl ? hovered : true;
+    if (!shouldFetch || fetchedRef.current) return;
+    fetchedRef.current = true;
 
+    let isMounted = true;
     const fetchImages = async () => {
       try {
         if (albumId) {
@@ -41,12 +50,11 @@ const AlbumPreview = memo(function AlbumPreview({
           const data = await res.json();
           if (!isMounted) return;
           if (data.success && data.data?.images) {
-            const imgs = data.data.images.slice(0, 4).map((img: any) =>
+            setPreviewImages(data.data.images.slice(0, 4).map((img: any) =>
               img.thumbnailUrl?.includes('.webp') ? img.thumbnailUrl : (img.thumbnailUrl || img.fileUrl)
-            ).filter(Boolean);
-            setPreviewImages(imgs);
+            ).filter(Boolean));
           }
-        } else if (year) {
+        } else if (year !== undefined) {
           const res = await fetch(`/api/albums/year/${year}/preview`);
           const data = await res.json();
           if (!isMounted) return;
@@ -60,22 +68,27 @@ const AlbumPreview = memo(function AlbumPreview({
 
     fetchImages();
     return () => { isMounted = false; };
-  }, [albumId, year, imageCount]);
+  }, [hovered, coverImageUrl, albumId, year]);
+
+  const displayImages = coverImageUrl
+    ? [coverImageUrl, ...previewImages.filter(src => src !== coverImageUrl)]
+    : previewImages;
 
   // Slideshow automático al hacer hover
   useEffect(() => {
-    if (!hovered || previewImages.length <= 1) return;
+    if (!hovered || displayImages.length <= 1) return;
+    const total = displayImages.length;
     const interval = setInterval(() => {
-      setActiveIndex(prev => (prev + 1) % previewImages.length);
+      setActiveIndex(prev => (prev + 1) % total);
     }, 1500);
     return () => clearInterval(interval);
-  }, [hovered, previewImages.length]);
+  }, [hovered, displayImages.length]);
 
   if (loading) {
     return <div className={`bg-gray-200 dark:bg-neutral-800 animate-pulse ${className}`} />;
   }
 
-  if (previewImages.length === 0) {
+  if (!coverImageUrl && previewImages.length === 0) {
     return (
       <div className={`bg-gray-100 dark:bg-neutral-800 flex items-center justify-center ${className}`}>
         <svg className="w-10 h-10 text-gray-300 dark:text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,12 +99,6 @@ const AlbumPreview = memo(function AlbumPreview({
   }
 
   const objectPosition = parseFocalPoint(coverFocalPoint);
-
-  // Si hay portada definida: mostrarla como primera imagen con focal point correcto
-  // El slideshow en hover sigue mostrando las demás fotos del álbum
-  const displayImages = coverImageUrl
-    ? [coverImageUrl, ...previewImages.filter(src => src !== coverImageUrl)]
-    : previewImages;
 
   return (
     <div
