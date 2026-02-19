@@ -355,14 +355,12 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={img.fileUrl}
                     alt={img.originalName}
-                    width={1400}
-                    height={900}
                     className={`max-w-[90vw] max-h-[65vh] object-contain block pointer-events-none transition-opacity duration-200 ${loading ? 'opacity-0' : 'opacity-100'}`}
                     onLoad={() => setLoading(false)}
-                    priority
                     draggable={false}
                   />
                 </motion.div>
