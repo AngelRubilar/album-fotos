@@ -12,6 +12,9 @@ interface Year {
   year: number;
   totalImages: number;
   albumCount: number;
+  coverImageUrl?: string | null;
+  coverFocalPoint?: string | null;
+  description?: string | null;
 }
 
 export default function Home() {
@@ -75,8 +78,8 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className={`text-xl font-semibold ${t.text} mb-2`}>Sin fotos todavia</h3>
-            <p className={`${t.textMuted} mb-6 max-w-sm mx-auto`}>Sube tus primeras fotos para comenzar a crear tu galeria.</p>
+            <h3 className={`text-xl font-semibold ${t.text} mb-2`}>Sin fotos todavía</h3>
+            <p className={`${t.textMuted} mb-6 max-w-sm mx-auto`}>Sube tus primeras fotos para comenzar a crear tu galería.</p>
             <Link href="/upload">
               <button className="btn-glass-accent px-6 py-3 rounded-xl text-white font-medium">Subir Fotos</button>
             </Link>
@@ -95,10 +98,18 @@ export default function Home() {
                 >
                   <div className={`rounded-2xl overflow-hidden ${t.glassCard} glass-card glass-glow`}>
                     <div className="aspect-[4/3] relative overflow-hidden">
-                      <AlbumPreview year={yearData.year} className="w-full h-full" />
+                      <AlbumPreview
+                    year={yearData.year}
+                    className="w-full h-full"
+                    coverImageUrl={yearData.coverImageUrl ?? undefined}
+                    coverFocalPoint={yearData.coverFocalPoint ?? undefined}
+                  />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
                       <div className="absolute bottom-4 left-4 right-4">
                         <h2 className="text-4xl font-bold text-white drop-shadow-lg">{yearData.year}</h2>
+                        {yearData.description && (
+                          <p className="text-sm text-white/80 mt-1 drop-shadow line-clamp-2">{yearData.description}</p>
+                        )}
                       </div>
                       <div className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-medium bg-black/30 backdrop-blur-md text-white border border-white/20">
                         {yearData.totalImages} fotos
@@ -106,7 +117,7 @@ export default function Home() {
                     </div>
                     <div className="px-5 py-4">
                       <p className={`text-sm ${t.textMuted}`}>
-                        {yearData.albumCount} album{yearData.albumCount !== 1 ? 'es' : ''}
+                        {yearData.albumCount} álbum{yearData.albumCount !== 1 ? 'es' : ''}
                       </p>
                       <span className={`text-sm font-medium ${t.accent} inline-flex items-center gap-1 mt-2 group-hover:gap-2 transition-all`}>
                         Explorar
