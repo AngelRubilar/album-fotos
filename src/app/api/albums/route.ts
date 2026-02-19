@@ -6,9 +6,8 @@ export async function GET() {
   try {
     const albums = await prisma.album.findMany({
       include: {
-        _count: {
-          select: { images: true }
-        }
+        _count: { select: { images: true } },
+        category: { select: { id: true, name: true } },
       },
       orderBy: { year: 'desc' }
     });
@@ -19,26 +18,22 @@ export async function GET() {
       title: album.title,
       description: album.description,
       subAlbum: album.subAlbum,
+      categoryId: album.categoryId,
+      category: album.category,
       coverImageUrl: album.coverImageUrl,
+      coverFocalPoint: album.coverFocalPoint,
+      eventDate: album.eventDate,
       imageCount: album._count.images,
       createdAt: album.createdAt,
       updatedAt: album.updatedAt
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: albumsWithCount
-    }, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
-      }
+    return NextResponse.json({ success: true, data: albumsWithCount }, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' }
     });
   } catch (error) {
     console.error('Error fetching albums:', error);
-    return NextResponse.json(
-      { success: false, error: 'Error al obtener álbumes' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Error al obtener álbumes' }, { status: 500 });
   }
 }
 
@@ -48,25 +43,23 @@ export const revalidate = 60;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { year, title, description, subAlbum } = body;
+    const { year, title, description, categoryId, eventDate } = body;
 
-    // Validaciones
     if (!year || !title) {
-      return NextResponse.json(
-        { success: false, error: 'Año y título son requeridos' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Año y título son requeridos' }, { status: 400 });
     }
 
-    // Verificar si ya existe un álbum con el mismo año, título y subálbum
-    const existingAlbum = await prisma.album.findFirst({
-      where: {
-        year: parseInt(year),
-        title: title.trim(),
-        subAlbum: subAlbum?.trim() || null
-      }
-    });
+    // Resolver nombre de categoría si viene categoryId
+    let categoryName: string | null = null;
+    if (categoryId) {
+      const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+      categoryName = cat?.name ?? null;
+    }
 
+    // Verificar duplicado
+    const existingAlbum = await prisma.album.findFirst({
+      where: { year: parseInt(year), title: title.trim(), subAlbum: categoryName }
+    });
     if (existingAlbum) {
       return NextResponse.json(
         { success: false, error: `Ya existe un álbum con ese nombre para el año ${year}` },
@@ -74,14 +67,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Crear nuevo álbum en la base de datos
     const newAlbum = await prisma.album.create({
       data: {
         year: parseInt(year),
         title: title.trim(),
         description: description?.trim() || null,
-        subAlbum: subAlbum?.trim() || null
-      }
+        categoryId: categoryId || null,
+        subAlbum: categoryName,
+        eventDate: eventDate ? new Date(eventDate) : null,
+      },
+      include: { category: { select: { id: true, name: true } } }
     });
 
     return NextResponse.json({
@@ -92,6 +87,10 @@ export async function POST(request: NextRequest) {
         title: newAlbum.title,
         description: newAlbum.description,
         subAlbum: newAlbum.subAlbum,
+        categoryId: newAlbum.categoryId,
+        category: newAlbum.category,
+        eventDate: newAlbum.eventDate,
+        coverImageUrl: newAlbum.coverImageUrl,
         imageCount: 0,
         createdAt: newAlbum.createdAt
       },

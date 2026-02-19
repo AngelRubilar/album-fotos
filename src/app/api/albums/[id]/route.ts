@@ -2,156 +2,115 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
-// GET /api/albums/[id] - Obtener álbum específico
-export async function GET(request: NextRequest, { params }: RouteParams) {
+const albumInclude = {
+  _count: { select: { images: true } },
+  category: { select: { id: true, name: true } },
+} as const;
+
+function formatAlbum(album: any) {
+  return {
+    id: album.id,
+    year: album.year,
+    title: album.title,
+    description: album.description,
+    subAlbum: album.subAlbum,
+    categoryId: album.categoryId,
+    category: album.category,
+    coverImageUrl: album.coverImageUrl,
+    coverFocalPoint: album.coverFocalPoint,
+    eventDate: album.eventDate,
+    imageCount: album._count.images,
+    createdAt: album.createdAt,
+    updatedAt: album.updatedAt,
+  };
+}
+
+// GET /api/albums/[id]
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-
-    const album = await prisma.album.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: { images: true }
-        }
-      }
-    });
+    const album = await prisma.album.findUnique({ where: { id }, include: albumInclude });
 
     if (!album) {
-      return NextResponse.json(
-        { success: false, error: 'Álbum no encontrado' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Álbum no encontrado' }, { status: 404 });
     }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: album.id,
-        year: album.year,
-        title: album.title,
-        description: album.description,
-        subAlbum: album.subAlbum,
-        coverImageUrl: album.coverImageUrl,
-        imageCount: album._count.images,
-        createdAt: album.createdAt,
-        updatedAt: album.updatedAt
-      }
-    });
-
+    return NextResponse.json({ success: true, data: formatAlbum(album) });
   } catch (error) {
     console.error('Error fetching album:', error);
-    return NextResponse.json(
-      { success: false, error: 'Error al obtener álbum' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Error al obtener álbum' }, { status: 500 });
   }
 }
 
-// PUT /api/albums/[id] - Actualizar álbum
+// PUT /api/albums/[id]
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const { title, description, subAlbum } = body;
+    const { title, description, categoryId, eventDate, coverImageUrl, coverFocalPoint } = body;
 
-    // Verificar que el álbum existe
-    const existingAlbum = await prisma.album.findUnique({
-      where: { id }
-    });
-
-    if (!existingAlbum) {
-      return NextResponse.json(
-        { success: false, error: 'Álbum no encontrado' },
-        { status: 404 }
-      );
+    const existing = await prisma.album.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ success: false, error: 'Álbum no encontrado' }, { status: 404 });
     }
 
-    // Actualizar álbum
-    const updatedAlbum = await prisma.album.update({
+    // Resolver nombre de categoría si cambió
+    let newCategoryId = categoryId !== undefined ? (categoryId || null) : existing.categoryId;
+    let newSubAlbum = existing.subAlbum;
+
+    if (categoryId !== undefined) {
+      if (categoryId) {
+        const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+        newSubAlbum = cat?.name ?? null;
+      } else {
+        newSubAlbum = null;
+      }
+    }
+
+    const updated = await prisma.album.update({
       where: { id },
       data: {
-        title: title?.trim() || existingAlbum.title,
-        description: description?.trim() ?? existingAlbum.description,
-        subAlbum: subAlbum?.trim() ?? existingAlbum.subAlbum
+        title: title?.trim() || existing.title,
+        description: description?.trim() ?? existing.description,
+        categoryId: newCategoryId,
+        subAlbum: newSubAlbum,
+        eventDate: eventDate !== undefined
+          ? (eventDate ? new Date(eventDate) : null)
+          : existing.eventDate,
+        coverImageUrl: coverImageUrl !== undefined ? coverImageUrl : existing.coverImageUrl,
+        coverFocalPoint: coverFocalPoint !== undefined ? coverFocalPoint : existing.coverFocalPoint,
       },
-      include: {
-        _count: {
-          select: { images: true }
-        }
-      }
+      include: albumInclude,
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: updatedAlbum.id,
-        year: updatedAlbum.year,
-        title: updatedAlbum.title,
-        description: updatedAlbum.description,
-        subAlbum: updatedAlbum.subAlbum,
-        coverImageUrl: updatedAlbum.coverImageUrl,
-        imageCount: updatedAlbum._count.images,
-        createdAt: updatedAlbum.createdAt,
-        updatedAt: updatedAlbum.updatedAt
-      },
-      message: 'Álbum actualizado exitosamente'
-    });
-
+    return NextResponse.json({ success: true, data: formatAlbum(updated) });
   } catch (error) {
     console.error('Error updating album:', error);
-    return NextResponse.json(
-      { success: false, error: 'Error al actualizar álbum' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Error al actualizar álbum' }, { status: 500 });
   }
 }
 
-// DELETE /api/albums/[id] - Eliminar álbum
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+// DELETE /api/albums/[id]
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-
-    // Verificar si el álbum existe
-    const existingAlbum = await prisma.album.findUnique({
+    const existing = await prisma.album.findUnique({
       where: { id },
-      include: {
-        _count: {
-          select: { images: true }
-        }
-      }
+      include: { _count: { select: { images: true } } }
     });
-
-    if (!existingAlbum) {
-      return NextResponse.json(
-        { success: false, error: 'Álbum no encontrado' },
-        { status: 404 }
-      );
+    if (!existing) {
+      return NextResponse.json({ success: false, error: 'Álbum no encontrado' }, { status: 404 });
     }
 
-    // Eliminar álbum (las imágenes se eliminan en cascada gracias al schema)
-    await prisma.album.delete({
-      where: { id }
-    });
+    await prisma.album.delete({ where: { id } });
 
     return NextResponse.json({
       success: true,
-      data: {
-        id: existingAlbum.id,
-        year: existingAlbum.year,
-        title: existingAlbum.title,
-        description: existingAlbum.description,
-        subAlbum: existingAlbum.subAlbum,
-        imageCount: existingAlbum._count.images,
-        createdAt: existingAlbum.createdAt
-      },
+      data: { id: existing.id, title: existing.title },
       message: 'Álbum eliminado exitosamente'
     });
-
   } catch (error) {
     console.error('Error deleting album:', error);
     return NextResponse.json(

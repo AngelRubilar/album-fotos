@@ -40,6 +40,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       description: album.description,
       subAlbum: album.subAlbum,
       coverImageUrl: album.coverImageUrl,
+      coverFocalPoint: album.coverFocalPoint,
       imageCount: album._count.images,
       createdAt: album.createdAt,
       updatedAt: album.updatedAt
