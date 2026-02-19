@@ -41,6 +41,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </svg>
       ),
     },
+    {
+      href: "/admin/categories",
+      label: "Categorías",
+      exact: false,
+      icon: (
+        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+        </svg>
+      ),
+    },
   ];
 
   const isActive = (href: string, exact: boolean) => {
@@ -132,7 +142,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <button
         className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl ${t.glassCard}`}
         onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label={mobileOpen ? "Cerrar menu" : "Abrir menu"}
+        aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
       >
         <svg className={`w-5 h-5 ${t.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           {mobileOpen ? (

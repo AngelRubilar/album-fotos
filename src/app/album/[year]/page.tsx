@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -24,9 +25,10 @@ const ImageGallery = dynamic(() => import("@/components/ImageGallery"), {
 type LayoutMode = 'masonry' | 'grid';
 const PAGE_SIZE = 50;
 
-export default function AlbumPage({ params }: { params: Promise<{ year: string }> }) {
+function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
   const { t } = useTheme();
   const { addToast } = useToast();
+  const searchParams = useSearchParams();
   const [year, setYear] = useState('');
   const [images, setImages] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,21 +111,26 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
 
   useEffect(() => {
     if (!year) return;
+    const albumParam = searchParams.get('album');
     fetch(`/api/albums/year/${year}`)
       .then(r => r.json())
       .then(d => {
         if (d.success) {
           setSubAlbums(d.data);
-          setSelectedAlbum(null);
-          setSelectedAlbumData(null);
-          setImages([]);
-          setHasMore(false);
-          setTotalImages(0);
+          if (albumParam) {
+            loadAlbumImages(albumParam);
+          } else {
+            setSelectedAlbum(null);
+            setSelectedAlbumData(null);
+            setImages([]);
+            setHasMore(false);
+            setTotalImages(0);
+          }
         }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [year]);
+  }, [year, searchParams, loadAlbumImages]);
 
   const filteredAlbums = useMemo(() =>
     subAlbums.filter(a =>
@@ -258,7 +265,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
         {/* Busqueda de albums */}
         {!selectedAlbum && subAlbums.length > 2 && (
           <div className="mb-6 max-w-sm">
-            <SearchBar onSearch={setSearchQuery} placeholder="Buscar album..." />
+            <SearchBar onSearch={setSearchQuery} placeholder="Buscar álbum..." />
           </div>
         )}
 
@@ -272,7 +279,13 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
                 className={`cursor-pointer rounded-2xl overflow-hidden ${t.glassCard} glass-card glass-glow`}
               >
                 <div className="aspect-[16/10] relative overflow-hidden">
-                  <AlbumPreview albumId={album.id} imageCount={album.imageCount} className="w-full h-full" />
+                  <AlbumPreview
+                    albumId={album.id}
+                    imageCount={album.imageCount}
+                    className="w-full h-full"
+                    coverImageUrl={album.coverImageUrl ?? undefined}
+                    coverFocalPoint={album.coverFocalPoint ?? undefined}
+                  />
                 </div>
                 <div className="px-5 py-4">
                   <div className="flex items-center justify-between mb-1">
@@ -292,32 +305,60 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
           </StaggerContainer>
         )}
 
-        {/* Photos: Masonry - uses thumbnails for performance */}
+        {/* Photos: Masonry (CSS Grid alturas naturales) */}
         {selectedAlbum && images.length > 0 && layoutMode === 'masonry' && (
           <div className="masonry">
-            {images.map((image, index) => (
-              <motion.div
-                key={image.id}
-                className="masonry-item group"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.5) }}
-              >
-                <div className="photo-card cursor-pointer relative" onClick={() => { setGalleryIndex(index); setGalleryOpen(true); }}>
-                  <Image src={image.thumbnailUrl || image.fileUrl || '/placeholder.jpg'} alt={image.originalName || ''} width={600} height={0} className="w-full h-auto block rounded-xl" sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw" placeholder={image.blurDataUrl ? 'blur' : 'empty'} blurDataURL={image.blurDataUrl || undefined} />
-                  <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
-                    <svg className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                    </svg>
+            {images.map((image, index) => {
+              const w = image.width || 400;
+              const h = image.height || 400;
+              const ratio = h / w;
+              // Retratos (ratio>1) → 1 columna, altos
+              // Paisajes/cuadrados (ratio<=1) → 2 columnas, anchos
+              const isPortrait = ratio > 1;
+              const colSpan = isPortrait ? 1 : 2;
+              // Ancho de visualizacion aproximado segun columnas
+              const displayWidth = isPortrait ? 250 : 500;
+              const displayHeight = Math.round(displayWidth * ratio);
+              // rowSpan = (altura + gap) / (1px_row + gap)
+              const rowSpan = Math.max(Math.ceil((displayHeight + 12) / 13), 8);
+
+              return (
+                <motion.div
+                  key={image.id}
+                  className="group overflow-hidden rounded-xl"
+                  style={{
+                    gridRowEnd: `span ${rowSpan}`,
+                    gridColumn: `span ${colSpan}`,
+                  }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.5) }}
+                >
+                  <div className="photo-card cursor-pointer relative" onClick={() => { setGalleryIndex(index); setGalleryOpen(true); }}>
+                    <Image
+                      src={image.thumbnailUrl || image.fileUrl || '/placeholder.jpg'}
+                      alt={image.originalName || ''}
+                      width={400}
+                      height={Math.round(400 * ratio)}
+                      className="w-full h-auto block rounded-xl"
+                      sizes={isPortrait ? '(max-width: 768px) 50vw, 25vw' : '(max-width: 768px) 100vw, 50vw'}
+                      placeholder={image.blurDataUrl ? 'blur' : 'empty'}
+                      blurDataURL={image.blurDataUrl || undefined}
+                    />
+                    <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                      </svg>
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); deleteImage(image.id); }} className={`absolute top-2 right-2 p-1.5 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-all ${t.danger}`} aria-label="Eliminar imagen">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
-                  <button onClick={e => { e.stopPropagation(); deleteImage(image.id); }} className={`absolute top-2 right-2 p-1.5 rounded-lg bg-black/30 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-all ${t.danger}`} aria-label="Eliminar imagen">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         )}
 
@@ -357,7 +398,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
               <div className={`animate-spin rounded-full h-6 w-6 border-2 border-t-transparent ${t.border}`} />
             ) : (
               <button onClick={loadMore} className={`text-sm ${t.accent} hover:underline`}>
-                Cargar mas fotos ({images.length} de {totalImages})
+                Cargar más fotos ({images.length} de {totalImages})
               </button>
             )}
           </div>
@@ -371,8 +412,8 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className={`text-xl font-semibold ${t.text} mb-2`}>Album vacio</h3>
-            <p className={`${t.textMuted} mb-6 max-w-sm mx-auto`}>Sube fotos para llenar este album.</p>
+            <h3 className={`text-xl font-semibold ${t.text} mb-2`}>Álbum vacío</h3>
+            <p className={`${t.textMuted} mb-6 max-w-sm mx-auto`}>Sube fotos para llenar este álbum.</p>
             <Link href={`/upload?album=${selectedAlbum}`}>
               <button className="px-6 py-3 rounded-xl text-white font-medium btn-glass-accent">Subir Fotos</button>
             </Link>
@@ -381,7 +422,7 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
 
         {!selectedAlbum && filteredAlbums.length === 0 && searchQuery && (
           <div className="text-center py-16">
-            <p className={`${t.textMuted}`}>No se encontraron albums para &ldquo;{searchQuery}&rdquo;</p>
+            <p className={`${t.textMuted}`}>No se encontraron álbumes para &ldquo;{searchQuery}&rdquo;</p>
           </div>
         )}
 
@@ -392,10 +433,10 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
             </div>
-            <h3 className={`text-xl font-semibold ${t.text} mb-2`}>Sin albumes para {year}</h3>
-            <p className={`${t.textMuted} mb-6 max-w-sm mx-auto`}>Crea albumes para organizar tus fotos.</p>
+            <h3 className={`text-xl font-semibold ${t.text} mb-2`}>Sin álbumes para {year}</h3>
+            <p className={`${t.textMuted} mb-6 max-w-sm mx-auto`}>Crea álbumes para organizar tus fotos.</p>
             <Link href="/admin">
-              <button className="px-6 py-3 rounded-xl text-white font-medium btn-glass-accent">Crear Albumes</button>
+              <button className="px-6 py-3 rounded-xl text-white font-medium btn-glass-accent">Crear álbumes</button>
             </Link>
           </div>
         )}
@@ -412,5 +453,13 @@ export default function AlbumPage({ params }: { params: Promise<{ year: string }
         }}
       />
     </div>
+  );
+}
+
+export default function AlbumPage({ params }: { params: Promise<{ year: string }> }) {
+  return (
+    <Suspense fallback={null}>
+      <AlbumPageContent params={params} />
+    </Suspense>
   );
 }

@@ -55,7 +55,7 @@ function UploadContent() {
 
   const handleUpload = async () => {
     if (!selectedFiles.length) return;
-    if (!selectedAlbum) { addToast("Selecciona un album", "error"); return; }
+    if (!selectedAlbum) { addToast("Selecciona un álbum", "error"); return; }
     setUploading(true);
     setUploadProgress(0);
     try {

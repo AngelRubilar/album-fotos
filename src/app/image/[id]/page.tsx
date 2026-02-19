@@ -112,7 +112,7 @@ export default function ImagePage({ params }: { params: Promise<{ id: string }> 
               </p>
             </div>
             <div>
-              <p className={`text-xs uppercase tracking-wider ${t.textMuted} mb-1`}>Tamano</p>
+              <p className={`text-xs uppercase tracking-wider ${t.textMuted} mb-1`}>Tamaño</p>
               <p className={`text-sm font-medium ${t.text}`}>
                 {image.fileSize ? `${(image.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Desconocido'}
               </p>
@@ -122,13 +122,13 @@ export default function ImagePage({ params }: { params: Promise<{ id: string }> 
               <p className={`text-sm font-medium ${t.text}`}>{image.mimeType || 'Desconocido'}</p>
             </div>
             <div>
-              <p className={`text-xs uppercase tracking-wider ${t.textMuted} mb-1`}>Album</p>
+              <p className={`text-xs uppercase tracking-wider ${t.textMuted} mb-1`}>Álbum</p>
               {image.album ? (
                 <Link href={`/album/${image.album.year}`} className={`text-sm font-medium ${t.accent} hover:underline`}>
                   {image.album.title}
                 </Link>
               ) : (
-                <p className={`text-sm font-medium ${t.text}`}>Sin album</p>
+                <p className={`text-sm font-medium ${t.text}`}>Sin álbum</p>
               )}
             </div>
           </div>
