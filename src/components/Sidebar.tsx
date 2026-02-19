@@ -52,7 +52,7 @@ export default function Sidebar() {
       )}
 
       {/* Sidebar */}
-      <aside className={`sidebar-base ${mobileOpen ? 'sidebar-open' : ''} ${t.sidebarBg} glass-glow`}>
+      <aside className={`sidebar-base ${mobileOpen ? 'sidebar-open' : ''} ${t.sidebarBg}`}>
         {/* Header */}
         <div className="px-5 pt-6 pb-4">
           <Link href="/" className="block">
