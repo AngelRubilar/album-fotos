@@ -8,9 +8,24 @@ interface AlbumPreviewProps {
   year?: number;
   imageCount?: number;
   className?: string;
+  coverImageUrl?: string;
+  coverFocalPoint?: string;
 }
 
-const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, className = '' }: AlbumPreviewProps) {
+function parseFocalPoint(fp: string | null | undefined): string {
+  if (!fp) return '50% 50%';
+  const [x, y] = fp.split(',');
+  return `${x}% ${y}%`;
+}
+
+const AlbumPreview = memo(function AlbumPreview({
+  albumId,
+  year,
+  imageCount,
+  className = '',
+  coverImageUrl,
+  coverFocalPoint,
+}: AlbumPreviewProps) {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [hovered, setHovered] = useState(false);
@@ -70,14 +85,21 @@ const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, cla
     );
   }
 
-  // Modo slideshow: imagen única con crossfade
+  const objectPosition = parseFocalPoint(coverFocalPoint);
+
+  // Si hay portada definida: mostrarla como primera imagen con focal point correcto
+  // El slideshow en hover sigue mostrando las demás fotos del álbum
+  const displayImages = coverImageUrl
+    ? [coverImageUrl, ...previewImages.filter(src => src !== coverImageUrl)]
+    : previewImages;
+
   return (
     <div
       className={`relative overflow-hidden ${className}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setActiveIndex(0); }}
     >
-      {previewImages.map((src, i) => (
+      {displayImages.map((src, i) => (
         <Image
           key={src}
           src={src}
@@ -86,13 +108,14 @@ const AlbumPreview = memo(function AlbumPreview({ albumId, year, imageCount, cla
           className={`object-cover transition-opacity duration-700 ${
             i === activeIndex ? 'opacity-100' : 'opacity-0'
           }`}
+          style={i === 0 && coverImageUrl ? { objectPosition } : undefined}
           sizes="(max-width: 768px) 100vw, 50vw"
         />
       ))}
       {/* Indicadores de slideshow */}
-      {hovered && previewImages.length > 1 && (
+      {hovered && displayImages.length > 1 && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
-          {previewImages.map((_, i) => (
+          {displayImages.map((_, i) => (
             <div
               key={i}
               className={`h-1.5 rounded-full transition-all duration-300 ${
