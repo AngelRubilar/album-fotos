@@ -39,7 +39,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className={`min-h-screen ${t.gradientBg}`}>
-        <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="mb-10">
             <Skeleton className="h-8 w-48 mb-2" />
             <Skeleton className="h-4 w-72" />
@@ -56,7 +56,7 @@ export default function Home() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${t.gradientBg}`}>
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
         <FadeUp className="mb-10 md:ml-0 ml-10">
           <h1 className={`text-3xl font-bold ${t.text} mb-1`}>Bienvenido</h1>

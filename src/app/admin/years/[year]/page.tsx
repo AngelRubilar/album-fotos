@@ -211,7 +211,7 @@ export default function AdminYearPage({ params }: { params: Promise<{ year: stri
 
   return (
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         <FadeUp className="mb-8 md:ml-0 ml-10">
           <div className="flex items-center gap-3 mb-1">

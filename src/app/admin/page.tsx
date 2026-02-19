@@ -72,7 +72,7 @@ export default function AdminDashboard() {
 
   return (
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <FadeUp className="mb-8 md:ml-0 ml-10">
           <h1 className={`text-2xl font-bold ${t.text}`}>Dashboard</h1>
           <p className={`text-sm ${t.textMuted} mt-1`}>Resumen de tu galería personal</p>

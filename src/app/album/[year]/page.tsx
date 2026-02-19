@@ -44,10 +44,22 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
   const [hasMore, setHasMore] = useState(false);
   const [totalImages, setTotalImages] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const masonryRef = useRef<HTMLDivElement>(null);
+  const [masonryWidth, setMasonryWidth] = useState(600);
 
   useEffect(() => {
     const saved = localStorage.getItem('album-layout') as LayoutMode;
     if (saved === 'masonry' || saved === 'grid') setLayoutMode(saved);
+  }, []);
+
+  useEffect(() => {
+    const el = masonryRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setMasonryWidth(entry.contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const toggleLayout = (mode: LayoutMode) => {
@@ -143,7 +155,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
   if (!year || loading) {
     return (
       <div className={`min-h-screen ${t.gradientBg}`}>
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="mb-8">
             <Skeleton className="h-4 w-32 mb-3" />
             <Skeleton className="h-7 w-24" />
@@ -160,10 +172,10 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
 
   return (
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Breadcrumb + Title */}
         <FadeUp className="mb-8 md:ml-0 ml-10">
-          <nav className={`flex items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
+          <nav className={`flex flex-wrap items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
             <Link href="/" className="hover:underline">Inicio</Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -307,20 +319,22 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
 
         {/* Photos: Masonry (CSS Grid alturas naturales) */}
         {selectedAlbum && images.length > 0 && layoutMode === 'masonry' && (
-          <div className="masonry">
+          <div className="masonry" ref={masonryRef}>
             {images.map((image, index) => {
               const w = image.width || 400;
               const h = image.height || 400;
               const ratio = h / w;
-              // Retratos (ratio>1) → 1 columna, altos
-              // Paisajes/cuadrados (ratio<=1) → 2 columnas, anchos
               const isPortrait = ratio > 1;
               const colSpan = isPortrait ? 1 : 2;
-              // Ancho de visualizacion aproximado segun columnas
-              const displayWidth = isPortrait ? 250 : 500;
+              // Calcula el ancho real de columna segun el contenedor actual
+              // gap: 8px en móvil (<640px), 12px en tablet+. Coincide con globals.css
+              const gap = masonryWidth < 590 ? 8 : 12;
+              const numCols = masonryWidth < 768 ? 2 : masonryWidth < 1024 ? 3 : 4;
+              const singleColWidth = (masonryWidth - gap * (numCols - 1)) / numCols;
+              const displayWidth = colSpan === 1 ? singleColWidth : singleColWidth * 2 + gap;
               const displayHeight = Math.round(displayWidth * ratio);
-              // rowSpan = (altura + gap) / (1px_row + gap)
-              const rowSpan = Math.max(Math.ceil((displayHeight + 12) / 13), 8);
+              // rowSpan: cada fila = 1px, gap entre filas = G → celda = N(1+G) - G
+              const rowSpan = Math.max(Math.ceil((displayHeight + gap) / (1 + gap)), 8);
 
               return (
                 <motion.div
@@ -341,7 +355,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
                       width={400}
                       height={Math.round(400 * ratio)}
                       className="w-full h-auto block rounded-xl"
-                      sizes={isPortrait ? '(max-width: 768px) 50vw, 25vw' : '(max-width: 768px) 100vw, 50vw'}
+                      sizes={isPortrait ? '(max-width: 767px) 50vw, (max-width: 1023px) 33vw, 25vw' : '(max-width: 767px) 100vw, (max-width: 1023px) 66vw, 50vw'}
                       placeholder={image.blurDataUrl ? 'blur' : 'empty'}
                       blurDataURL={image.blurDataUrl || undefined}
                     />
