@@ -7,9 +7,7 @@ import path from 'path';
  */
 const THUMBNAIL_CONFIG = {
   width: 400,
-  height: 400,
-  quality: 80,
-  fit: 'cover' as const,
+  quality: 70,
   format: 'webp' as const, // WebP para mejor compresión
 };
 
@@ -31,11 +29,12 @@ export async function generateThumbnail(
     }
 
     // Generar thumbnail con Sharp (rotate auto-corrige orientacion EXIF)
+    // Redimensiona al ancho maximo preservando aspect ratio original
     await sharp(inputPath)
       .rotate()
-      .resize(THUMBNAIL_CONFIG.width, THUMBNAIL_CONFIG.height, {
-        fit: THUMBNAIL_CONFIG.fit,
-        position: 'center',
+      .resize(THUMBNAIL_CONFIG.width, null, {
+        fit: 'inside',
+        withoutEnlargement: true,
       })
       .webp({ quality: THUMBNAIL_CONFIG.quality })
       .toFile(outputPath);

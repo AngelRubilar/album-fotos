@@ -35,12 +35,12 @@ async function main() {
         const rotatedBuffer = await sharp(filePath).rotate().toBuffer();
         await fs.promises.writeFile(filePath, rotatedBuffer);
 
-        // Regenerar thumbnail
+        // Regenerar thumbnail preservando aspect ratio
         const thumbName = file.replace(/\.[^.]+$/, '.webp');
         const thumbPath = path.join(thumbnailsDir, thumbName);
         await sharp(filePath)
           .rotate()
-          .resize(400, 400, { fit: 'cover', position: 'center' })
+          .resize(400, null, { fit: 'inside', withoutEnlargement: true })
           .webp({ quality: 80 })
           .toFile(thumbPath);
 
