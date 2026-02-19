@@ -21,8 +21,8 @@ const nextConfig: NextConfig = {
     // Tamaños de dispositivos para responsive images
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
 
-    // Tamaños de iconos y thumbnails
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Tamaños de iconos y thumbnails (400 = ancho de thumbnails generados)
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 400],
 
     // Dominios permitidos para imágenes remotas (si se usan en el futuro)
     remotePatterns: [
