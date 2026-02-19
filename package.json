@@ -12,7 +12,8 @@
     "generate-thumbnails": "tsx scripts/generate-thumbnails.ts",
     "update-thumbnails": "tsx scripts/update-thumbnail-paths.ts",
     "generate-blur": "tsx scripts/generate-blur-placeholders.ts",
-    "fix-orientation": "tsx scripts/fix-image-orientation.ts"
+    "fix-orientation": "tsx scripts/fix-image-orientation.ts",
+    "fix-db-dimensions": "tsx scripts/fix-db-dimensions.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
