@@ -13,14 +13,18 @@ datasource db {
 
 // Modelo de Álbumes (organizados por años, permite múltiples álbumes por año)
 model Album {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   year            Int
   title           String
   description     String?
-  subAlbum        String?  // Categoría o sub-álbum (ej: "Vacaciones", "Eventos")
+  subAlbum        String?   // Nombre de categoría (sincronizado desde category.name)
+  categoryId      String?   // FK a Category
+  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   coverImageUrl   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  coverFocalPoint String?   // "x,y" porcentajes, ej: "45,30"
+  eventDate       DateTime? // Fecha real en que se tomaron las fotos
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relación con imágenes
   images          Image[]
@@ -28,8 +32,31 @@ model Album {
   // Índices para optimizar queries
   @@unique([year, title, subAlbum]) // Evitar duplicados
   @@index([year])
+  @@index([categoryId])
   @@index([createdAt])
   @@map("albums")
+}
+
+// Categorías predefinidas para álbumes
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  albums    Album[]
+
+  @@map("categories")
+}
+
+// Portada de año (fija una imagen con focal point para la tarjeta del año en home)
+model YearCover {
+  year            Int      @id
+  coverImageUrl   String?
+  coverFocalPoint String?
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("year_covers")
 }
 
 // Modelo de Imágenes
