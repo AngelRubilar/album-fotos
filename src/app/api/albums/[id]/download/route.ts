@@ -100,10 +100,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // 8. Finalizar archivo
     archive.finalize();
 
-    // 9. Log de resultados
-    console.log(`ZIP created: ${zipFilename} - ${addedCount} files`);
-    if (skippedFiles.length > 0) {
-      console.log(`Skipped: ${skippedFiles.length} files`);
+    // 9. Log de resultados (solo en desarrollo)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`ZIP created: ${zipFilename} - ${addedCount} files`);
+      if (skippedFiles.length > 0) {
+        console.log(`Skipped: ${skippedFiles.length} files`);
+      }
     }
 
     // 10. Convertir stream para Next.js

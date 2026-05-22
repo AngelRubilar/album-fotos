@@ -96,16 +96,16 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       try {
         await unlink(filePath);
       } catch {
-        console.log('Archivo principal no encontrado:', filePath);
+        console.warn('Archivo principal no encontrado:', filePath);
       }
 
       try {
         await unlink(thumbnailPath);
       } catch {
-        console.log('Miniatura no encontrada:', thumbnailPath);
+        console.warn('Miniatura no encontrada:', thumbnailPath);
       }
     } catch (error) {
-      console.log('Error eliminando archivos físicos:', error);
+      console.warn('Error eliminando archivos físicos:', error);
     }
 
     // Eliminar de la base de datos

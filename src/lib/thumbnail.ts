@@ -39,7 +39,9 @@ export async function generateThumbnail(
       .webp({ quality: THUMBNAIL_CONFIG.quality })
       .toFile(outputPath);
 
-    console.log(`✅ Thumbnail generated: ${outputPath}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`✅ Thumbnail generated: ${outputPath}`);
+    }
   } catch (error) {
     console.error(`❌ Error generating thumbnail for ${inputPath}:`, error);
     throw error;
@@ -141,6 +143,8 @@ export function deleteThumbnail(
 
   if (fs.existsSync(thumbnailPath)) {
     fs.unlinkSync(thumbnailPath);
-    console.log(`🗑️ Thumbnail deleted: ${thumbnailPath}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🗑️ Thumbnail deleted: ${thumbnailPath}`);
+    }
   }
 }
