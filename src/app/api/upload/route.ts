@@ -16,6 +16,19 @@ export const config = {
 export const maxDuration = 300; // 5 minutos de timeout
 export const dynamic = 'force-dynamic';
 
+// Validación de archivos subidos
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB por archivo
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+  'image/heic',
+  'image/heif',
+  'image/tiff',
+]);
+
 // POST /api/upload - Subir imágenes
 export async function POST(request: NextRequest) {
   try {
@@ -39,11 +52,19 @@ export async function POST(request: NextRequest) {
     }
 
     const uploadedImages = [];
+    const skippedFiles: { name: string; reason: string }[] = [];
 
     for (const file of files) {
-      // Validar que sea una imagen
-      if (!file.type.startsWith('image/')) {
-        continue; // Saltar archivos que no son imágenes
+      // Validar tipo: debe ser una imagen de un formato soportado
+      if (!file.type.startsWith('image/') || !ALLOWED_MIME_TYPES.has(file.type)) {
+        skippedFiles.push({ name: file.name, reason: `Tipo no soportado (${file.type || 'desconocido'})` });
+        continue;
+      }
+
+      // Validar tamaño máximo por archivo
+      if (file.size > MAX_FILE_SIZE) {
+        skippedFiles.push({ name: file.name, reason: `Excede el tamaño máximo (${Math.round(MAX_FILE_SIZE / 1024 / 1024)} MB)` });
+        continue;
       }
 
       // Crear nombre único para el archivo
@@ -81,7 +102,6 @@ export async function POST(request: NextRequest) {
       let thumbnailUrl = `/thumbnails/${fileName}`;
       try {
         thumbnailUrl = await generateThumbnailForUpload(fileName, uploadsDir, thumbnailsDir);
-        console.log(`Thumbnail generated: ${thumbnailUrl}`);
       } catch {
         console.warn(`Could not generate thumbnail for ${fileName}, using fallback`);
         thumbnailUrl = `/uploads/${fileName}`;
@@ -187,7 +207,7 @@ export async function POST(request: NextRequest) {
 
     if (uploadedImages.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'No se subieron imágenes válidas' },
+        { success: false, error: 'No se subieron imágenes válidas', skipped: skippedFiles },
         { status: 400 }
       );
     }
@@ -195,7 +215,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: uploadedImages,
+      skipped: skippedFiles,
       message: `${uploadedImages.length} imagen(es) subida(s) exitosamente`
+        + (skippedFiles.length > 0 ? `, ${skippedFiles.length} omitida(s)` : '')
     });
 
   } catch (error) {
