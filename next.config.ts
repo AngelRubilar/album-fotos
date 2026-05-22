@@ -4,16 +4,6 @@ const nextConfig: NextConfig = {
   // Configuración para Docker (standalone output)
   output: 'standalone',
 
-  // Deshabilitar ESLint durante el build de producción
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
-  // Deshabilitar TypeScript checks durante build
-  typescript: {
-    ignoreBuildErrors: true, // Necesario porque seed.ts tiene errores pero no se usa en producción
-  },
-
   images: {
     // Formatos de imagen optimizados (AVIF primero, WebP como fallback)
     formats: ['image/avif', 'image/webp'],
