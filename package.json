@@ -13,7 +13,8 @@
     "update-thumbnails": "tsx scripts/update-thumbnail-paths.ts",
     "generate-blur": "tsx scripts/generate-blur-placeholders.ts",
     "fix-orientation": "tsx scripts/fix-image-orientation.ts",
-    "fix-db-dimensions": "tsx scripts/fix-db-dimensions.ts"
+    "fix-db-dimensions": "tsx scripts/fix-db-dimensions.ts",
+    "generate-icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
