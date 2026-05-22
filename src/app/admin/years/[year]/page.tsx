@@ -225,7 +225,7 @@ export default function AdminYearPage({ params }: { params: Promise<{ year: stri
               </svg>
             </Link>
             <div>
-              <h1 className={`text-2xl font-bold ${t.text}`}>Configurar año {year}</h1>
+              <h1 className={`font-display text-2xl font-medium ${t.text}`}>Configurar año {year}</h1>
               <p className={`text-sm ${t.textMuted} mt-0.5`}>
                 {albums.length} álbum(es) · {albums.reduce((s, a) => s + a.imageCount, 0)} fotos
               </p>
@@ -279,7 +279,7 @@ export default function AdminYearPage({ params }: { params: Promise<{ year: stri
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                   <div className="absolute bottom-3 left-4">
-                    <span className="text-3xl font-bold text-white drop-shadow-lg">{year}</span>
+                    <span className="font-display text-4xl font-semibold text-white drop-shadow-lg">{year}</span>
                     {description && (
                       <p className="text-sm text-white/80 mt-0.5 drop-shadow">{description}</p>
                     )}

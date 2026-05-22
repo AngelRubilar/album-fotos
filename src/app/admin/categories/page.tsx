@@ -99,7 +99,7 @@ export default function AdminCategoriesPage() {
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <FadeUp className="mb-6 md:ml-0 ml-10">
-          <h1 className={`text-2xl font-bold ${t.text}`}>Categorías</h1>
+          <h1 className={`font-display text-2xl font-medium ${t.text}`}>Categorías</h1>
           <p className={`text-sm ${t.textMuted} mt-1`}>
             Organiza tus álbumes en categorías predefinidas
           </p>
@@ -115,7 +115,7 @@ export default function AdminCategoriesPage() {
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && createCategory()}
               placeholder="Ej: Viajes, Cumpleaños, Navidad…"
-              className={`flex-1 px-4 py-2.5 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm`}
+              className={`flex-1 px-4 py-2.5 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-[#2f6b6b] focus:outline-none text-sm`}
             />
             <button
               onClick={createCategory}
@@ -158,12 +158,12 @@ export default function AdminCategoriesPage() {
                           if (e.key === "Enter") saveEdit();
                           if (e.key === "Escape") setEditingId(null);
                         }}
-                        className={`flex-1 px-3 py-1.5 rounded-lg border ${t.inputBorder} ${t.inputBg} ${t.text} text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+                        className={`flex-1 px-3 py-1.5 rounded-lg border ${t.inputBorder} ${t.inputBg} ${t.text} text-sm focus:ring-2 focus:ring-[#2f6b6b] focus:outline-none`}
                       />
                       <button
                         onClick={saveEdit}
                         disabled={saving}
-                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-[#2f6b6b] hover:bg-[#285d5d] transition-colors"
                       >
                         Guardar
                       </button>

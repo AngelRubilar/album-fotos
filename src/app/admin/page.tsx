@@ -35,7 +35,7 @@ export default function AdminDashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           ),
-          color: "text-blue-500",
+          color: "text-[#2f6b6b]",
         },
         {
           label: "Total de álbumes",
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <FadeUp className="mb-8 md:ml-0 ml-10">
-          <h1 className={`text-2xl font-bold ${t.text}`}>Dashboard</h1>
+          <h1 className={`font-display text-2xl font-medium ${t.text}`}>Dashboard</h1>
           <p className={`text-sm ${t.textMuted} mt-1`}>Resumen de tu galería personal</p>
         </FadeUp>
 
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
               {statCards.map((card) => (
                 <StaggerItem key={card.label} className={`${t.glassCard} rounded-2xl p-5`}>
                   <div className={`${card.color} mb-3`}>{card.icon}</div>
-                  <p className={`text-2xl font-bold ${t.text}`}>{card.value}</p>
+                  <p className={`font-display text-2xl font-medium ${t.text}`}>{card.value}</p>
                   <p className={`text-xs ${t.textMuted} mt-1`}>{card.label}</p>
                 </StaggerItem>
               ))}
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
                   href="/admin/upload"
                   className={`${t.glassCard} rounded-2xl p-6 flex items-center gap-4 hover:scale-[1.01] transition-transform`}
                 >
-                  <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
+                  <div className="p-3 rounded-xl bg-[#2f6b6b]/10 text-[#2f6b6b]">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>

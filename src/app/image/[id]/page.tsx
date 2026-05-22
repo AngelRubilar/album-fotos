@@ -53,7 +53,7 @@ export default function ImagePage({ params }: { params: Promise<{ id: string }> 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h2 className={`text-xl font-bold ${t.text} mb-2`}>Imagen no encontrada</h2>
+          <h2 className={`font-display text-2xl font-medium ${t.text} mb-2`}>Imagen no encontrada</h2>
           <p className={`${t.textMuted} mb-4`}>{error}</p>
           <Link href="/" className={`${t.accent} hover:underline`}>Volver al inicio</Link>
         </div>

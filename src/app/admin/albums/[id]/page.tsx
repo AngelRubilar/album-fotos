@@ -179,7 +179,7 @@ function FocalPointModal({
           <button
             onClick={() => onSave(`${focalPoint.x},${focalPoint.y}`)}
             disabled={saving}
-            className="px-5 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="px-5 py-2 rounded-xl text-sm font-medium text-white bg-[#2f6b6b] hover:bg-[#285d5d] transition-colors disabled:opacity-50"
           >
             {saving ? "Guardando…" : "Guardar portada"}
           </button>
@@ -384,7 +384,7 @@ export default function AlbumPhotosPage({ params }: { params: Promise<{ id: stri
             </Link>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className={`text-2xl font-bold ${t.text} truncate`}>{album?.title ?? "Álbum"}</h1>
+                <h1 className={`font-display text-2xl font-medium ${t.text} truncate`}>{album?.title ?? "Álbum"}</h1>
                 {album?.subAlbum && (
                   <span className={`text-xs px-2 py-0.5 rounded-full ${t.inputBg} ${t.textMuted}`}>
                     {album.subAlbum}
@@ -424,7 +424,7 @@ export default function AlbumPhotosPage({ params }: { params: Promise<{ id: stri
                 <div className="flex items-center gap-3 mt-0.5">
                   <button
                     onClick={() => openFocalModalFromHeader("album")}
-                    className={`text-xs text-blue-400 hover:text-blue-300 transition-colors`}
+                    className={`text-xs text-[#5fa3a0] hover:text-[#7fc0bd] transition-colors`}
                   >
                     Editar punto focal
                   </button>
@@ -503,7 +503,7 @@ export default function AlbumPhotosPage({ params }: { params: Promise<{ id: stri
             {photos.map((photo) => (
               <div
                 key={photo.id}
-                className={`group relative rounded-xl overflow-hidden aspect-square ${t.glassCard} ${isAlbumCover(photo) ? "ring-2 ring-blue-500" : ""} ${isYearCover(photo) ? "ring-2 ring-green-500" : ""}`}
+                className={`group relative rounded-xl overflow-hidden aspect-square ${t.glassCard} ${isAlbumCover(photo) ? "ring-2 ring-[#2f6b6b]" : ""} ${isYearCover(photo) ? "ring-2 ring-green-500" : ""}`}
               >
                 {/* Thumbnail */}
                 <img
@@ -518,7 +518,7 @@ export default function AlbumPhotosPage({ params }: { params: Promise<{ id: stri
                   {/* Badges */}
                   <div className="flex gap-1 flex-wrap">
                     {isAlbumCover(photo) && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-blue-500 text-white">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#2f6b6b] text-white">
                         Portada
                       </span>
                     )}
@@ -536,7 +536,7 @@ export default function AlbumPhotosPage({ params }: { params: Promise<{ id: stri
                       onClick={() => openFocalModal(photo, "album")}
                       disabled={coverSaving}
                       title="Portada del álbum"
-                      className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      className="p-1.5 rounded-lg bg-[#2f6b6b] text-white hover:bg-[#285d5d] transition-colors"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />

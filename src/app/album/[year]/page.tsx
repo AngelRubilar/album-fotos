@@ -193,7 +193,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
               <span className={t.text}>{year}</span>
             )}
           </nav>
-          <h1 className={`text-2xl font-bold ${t.text}`}>
+          <h1 className={`font-display text-3xl md:text-4xl font-medium tracking-tight ${t.text}`}>
             {selectedAlbum ? selectedAlbumData?.title : year}
           </h1>
           {selectedAlbum && selectedAlbumData?.description && (
@@ -289,7 +289,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
               <StaggerItem
                 key={album.id}
                 onClick={() => loadAlbumImages(album.id)}
-                className={`cursor-pointer rounded-2xl overflow-hidden ${t.glassCard} glass-card glass-glow`}
+                className={`cursor-pointer rounded-2xl overflow-hidden ${t.glassCard} glass-card`}
               >
                 <div className="aspect-[16/10] relative overflow-hidden">
                   <AlbumPreview

@@ -30,7 +30,7 @@ export default function SearchBar({ onSearch, placeholder = 'Buscar...' }: Searc
         value={query}
         onChange={e => handleChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full pl-10 pr-10 py-2.5 rounded-xl ${t.inputBg} ${t.inputBorder} ${t.text} border backdrop-blur-sm focus:ring-2 focus:ring-blue-500/50 focus:outline-none text-sm transition-all`}
+        className={`w-full pl-10 pr-10 py-2.5 rounded-xl ${t.inputBg} ${t.inputBorder} ${t.text} border backdrop-blur-sm focus:ring-2 focus:ring-[#2f6b6b]/50 focus:outline-none text-sm transition-all`}
       />
       {query && (
         <button

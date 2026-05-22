@@ -432,7 +432,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-white/40 text-xs uppercase tracking-wider">Descripción</p>
                     {!editingDesc && (
-                      <button onClick={() => { setDescValue(img.description || ''); setEditingDesc(true); }} className="text-xs text-blue-400 hover:text-blue-300">
+                      <button onClick={() => { setDescValue(img.description || ''); setEditingDesc(true); }} className="text-xs text-[#5fa3a0] hover:text-[#7fc0bd]">
                         {img.description ? 'Editar' : 'Agregar'}
                       </button>
                     )}
@@ -443,13 +443,13 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
                         value={descValue}
                         onChange={e => setDescValue(e.target.value)}
                         placeholder="Escribe una descripción..."
-                        className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500 resize-none"
+                        className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#2f6b6b] resize-none"
                         rows={3}
                         autoFocus
                       />
                       <div className="flex gap-2 justify-end">
                         <button onClick={() => setEditingDesc(false)} className="text-xs text-white/50 hover:text-white/70 px-3 py-1.5 rounded-lg">Cancelar</button>
-                        <button onClick={saveDescription} disabled={saving} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-500 disabled:opacity-50">{saving ? 'Guardando...' : 'Guardar'}</button>
+                        <button onClick={saveDescription} disabled={saving} className="text-xs bg-[#2f6b6b] text-white px-3 py-1.5 rounded-lg hover:bg-[#2f6b6b] disabled:opacity-50">{saving ? 'Guardando...' : 'Guardar'}</button>
                       </div>
                     </div>
                   ) : (

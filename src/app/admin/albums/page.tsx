@@ -38,7 +38,7 @@ type SortKey = "year" | "title" | "imageCount";
 type SortDir = "asc" | "desc";
 
 const inputClass = (t: ThemeColors) =>
-  `w-full px-3 py-2.5 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none`;
+  `w-full px-3 py-2.5 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} text-sm focus:ring-2 focus:ring-[#2f6b6b] focus:outline-none`;
 
 function formatEventDate(dateStr: string | null | undefined) {
   if (!dateStr) return null;
@@ -225,7 +225,7 @@ export default function AdminAlbumsPage() {
         <FadeUp className="mb-6 md:ml-0 ml-10">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className={`text-2xl font-bold ${t.text}`}>Álbumes</h1>
+              <h1 className={`font-display text-2xl font-medium ${t.text}`}>Álbumes</h1>
               <p className={`text-sm ${t.textMuted} mt-1`}>
                 {albums.length} álbum(es) · {groupedByYear.length} año(s)
               </p>
@@ -281,7 +281,7 @@ export default function AdminAlbumsPage() {
               <div>
                 <label className={`block text-xs font-medium ${t.textMuted} mb-1.5`}>
                   Categoría{" "}
-                  <Link href="/admin/categories" className="text-blue-500 hover:underline ml-1">
+                  <Link href="/admin/categories" className="text-[#2f6b6b] hover:underline ml-1">
                     (gestionar)
                   </Link>
                 </label>
@@ -394,7 +394,7 @@ export default function AdminAlbumsPage() {
                               <div>
                                 <label className={`block text-xs ${t.textMuted} mb-1`}>
                                   Categoría{" "}
-                                  <Link href="/admin/categories" className="text-blue-500 hover:underline">
+                                  <Link href="/admin/categories" className="text-[#2f6b6b] hover:underline">
                                     (gestionar)
                                   </Link>
                                 </label>
@@ -423,7 +423,7 @@ export default function AdminAlbumsPage() {
                               </button>
                               <button
                                 onClick={() => saveEdit(album.id)}
-                                className="flex-1 px-3 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                                className="flex-1 px-3 py-2 rounded-xl text-sm font-medium text-white bg-[#2f6b6b] hover:bg-[#285d5d] transition-colors"
                               >
                                 Guardar
                               </button>

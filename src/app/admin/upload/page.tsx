@@ -96,7 +96,7 @@ function UploadContent() {
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <FadeUp className="mb-8 md:ml-0 ml-10">
-          <h1 className={`text-2xl font-bold ${t.text}`}>Subir Fotos</h1>
+          <h1 className={`font-display text-2xl font-medium ${t.text}`}>Subir Fotos</h1>
           <p className={`text-sm ${t.textMuted} mt-1`}>Añade imágenes a tus álbumes</p>
         </FadeUp>
 
@@ -106,7 +106,7 @@ function UploadContent() {
             <select
               value={selectedAlbum}
               onChange={(e) => setSelectedAlbum(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+              className={`w-full px-4 py-3 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} focus:ring-2 focus:ring-[#2f6b6b] focus:outline-none`}
             >
               <option value="">-- Selecciona un álbum --</option>
               {albums.map((a) => (
@@ -124,7 +124,7 @@ function UploadContent() {
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <div className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${dragActive ? "border-blue-500 bg-blue-500/10 backdrop-blur-sm scale-[1.01]" : t.inputBorder}`}>
+            <div className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${dragActive ? "border-[#2f6b6b] bg-[#2f6b6b]/10 backdrop-blur-sm scale-[1.01]" : t.inputBorder}`}>
               <svg className={`w-12 h-12 mx-auto mb-4 ${t.textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
@@ -153,7 +153,7 @@ function UploadContent() {
                 </span>
                 <div className={`flex-1 h-1.5 rounded-full ${t.inputBg}`}>
                   <div
-                    className={`h-full rounded-full transition-all ${selectedFiles.reduce((a, f) => a + f.size, 0) > 100 * 1024 * 1024 ? "bg-red-500" : "bg-blue-500"}`}
+                    className={`h-full rounded-full transition-all ${selectedFiles.reduce((a, f) => a + f.size, 0) > 100 * 1024 * 1024 ? "bg-red-500" : "bg-[#2f6b6b]"}`}
                     style={{ width: `${Math.min((selectedFiles.reduce((a, f) => a + f.size, 0) / (100 * 1024 * 1024)) * 100, 100)}%` }}
                   />
                 </div>

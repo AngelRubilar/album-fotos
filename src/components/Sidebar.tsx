@@ -136,7 +136,7 @@ export default function Sidebar() {
               </svg>
             )}
             <span className="flex-1 text-left">Dark Mode</span>
-            <div className={`toggle-track ${isDark ? 'bg-blue-600' : 'bg-gray-300'}`} data-checked={isDark ? 'true' : 'false'}>
+            <div className={`toggle-track ${isDark ? 'bg-[#2f6b6b]' : 'bg-gray-300'}`} data-checked={isDark ? 'true' : 'false'}>
               <div className="toggle-thumb" />
             </div>
           </button>
