@@ -54,6 +54,12 @@ next-env.d.ts
 *.bmp
 *.tiff
 
+# Excepción: los íconos de la app (PWA) sí se versionan
+!/public/icon-192.png
+!/public/icon-512.png
+!/public/icon-512-maskable.png
+!/public/apple-touch-icon.png
+
 # backups and temporary files
 /backups/
 /backupsmigracion*/
