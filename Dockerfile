@@ -3,15 +3,21 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
+# Enable pnpm via corepack
+RUN corepack enable
+
 # Copy package files
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml .npmrc ./
 
 # Install ALL dependencies (including dev dependencies for build)
-RUN npm ci && npm cache clean --force
+RUN pnpm install --frozen-lockfile
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Enable pnpm via corepack
+RUN corepack enable
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -23,12 +29,12 @@ COPY . .
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 
 # Generate Prisma Client
-RUN npx prisma generate
+RUN pnpm exec prisma generate
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-RUN npm run build
+RUN pnpm run build
 
 # Stage 3: Runner (production image)
 FROM node:20-alpine AS runner
