@@ -59,8 +59,8 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
         <FadeUp className="mb-10 md:ml-0 ml-10">
-          <h1 className={`text-3xl font-bold ${t.text} mb-1`}>Bienvenido</h1>
-          <p className={`${t.textMuted}`}>Tus recuerdos organizados por momentos</p>
+          <h1 className={`font-display text-4xl md:text-5xl font-medium tracking-tight ${t.text} mb-2`}>Bienvenido</h1>
+          <p className={`${t.textMuted} text-base`}>Tus recuerdos organizados por momentos</p>
         </FadeUp>
 
         {/* Busqueda */}
@@ -78,7 +78,7 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className={`text-xl font-semibold ${t.text} mb-2`}>Sin fotos todavía</h3>
+            <h3 className={`font-display text-2xl font-medium ${t.text} mb-2`}>Sin fotos todavía</h3>
             <p className={`${t.textMuted} mb-6 max-w-sm mx-auto`}>Sube tus primeras fotos para comenzar a crear tu galería.</p>
             <Link href="/upload">
               <button className="btn-glass-accent px-6 py-3 rounded-xl text-white font-medium">Subir Fotos</button>
@@ -96,7 +96,7 @@ export default function Home() {
                   href={`/album/${yearData.year}`}
                   className="group block"
                 >
-                  <div className={`rounded-2xl overflow-hidden ${t.glassCard} glass-card glass-glow`}>
+                  <div className={`rounded-2xl overflow-hidden ${t.glassCard} glass-card`}>
                     <div className="aspect-[4/3] relative overflow-hidden">
                       <AlbumPreview
                     year={yearData.year}
@@ -106,7 +106,7 @@ export default function Home() {
                   />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
                       <div className="absolute bottom-4 left-4 right-4">
-                        <h2 className="text-4xl font-bold text-white drop-shadow-lg">{yearData.year}</h2>
+                        <h2 className="font-display text-5xl font-semibold text-white drop-shadow-lg">{yearData.year}</h2>
                         {yearData.description && (
                           <p className="text-sm text-white/80 mt-1 drop-shadow line-clamp-2">{yearData.description}</p>
                         )}
