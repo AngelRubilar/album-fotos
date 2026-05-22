@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/components/Toast";
 import { FadeUp } from "@/components/MotionWrap";
+import type { AlbumSummary } from "@/types";
 
 function UploadContent() {
   const { t } = useTheme();
@@ -14,7 +15,7 @@ function UploadContent() {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [albums, setAlbums] = useState<any[]>([]);
+  const [albums, setAlbums] = useState<AlbumSummary[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<string>("");
 
   useEffect(() => {

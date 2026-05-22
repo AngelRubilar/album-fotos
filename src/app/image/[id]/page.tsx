@@ -6,11 +6,12 @@ import Link from 'next/link';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Skeleton } from '@/components/Skeleton';
 import { FadeUp } from '@/components/MotionWrap';
+import type { ImageDetail } from '@/types';
 
 export default function ImagePage({ params }: { params: Promise<{ id: string }> }) {
   const { t } = useTheme();
   const [imageId, setImageId] = useState('');
-  const [image, setImage] = useState<any>(null);
+  const [image, setImage] = useState<ImageDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

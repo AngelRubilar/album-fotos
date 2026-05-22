@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
@@ -10,7 +11,9 @@ const albumInclude = {
   category: { select: { id: true, name: true } },
 } as const;
 
-function formatAlbum(album: any) {
+type AlbumWithRelations = Prisma.AlbumGetPayload<{ include: typeof albumInclude }>;
+
+function formatAlbum(album: AlbumWithRelations) {
   return {
     id: album.id,
     year: album.year,
@@ -57,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Resolver nombre de categoría si cambió
-    let newCategoryId = categoryId !== undefined ? (categoryId || null) : existing.categoryId;
+    const newCategoryId = categoryId !== undefined ? (categoryId || null) : existing.categoryId;
     let newSubAlbum = existing.subAlbum;
 
     if (categoryId !== undefined) {

@@ -12,6 +12,7 @@ import AlbumPreview from "@/components/AlbumPreview";
 import SearchBar from "@/components/SearchBar";
 import { Skeleton, AlbumCardSkeleton } from "@/components/Skeleton";
 import { FadeUp, StaggerContainer, StaggerItem } from "@/components/MotionWrap";
+import type { AlbumImage, AlbumSummary } from "@/types";
 
 const ImageGallery = dynamic(() => import("@/components/ImageGallery"), {
   loading: () => (
@@ -30,13 +31,13 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
   const { addToast } = useToast();
   const searchParams = useSearchParams();
   const [year, setYear] = useState('');
-  const [images, setImages] = useState<any[]>([]);
+  const [images, setImages] = useState<AlbumImage[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [subAlbums, setSubAlbums] = useState<any[]>([]);
+  const [subAlbums, setSubAlbums] = useState<AlbumSummary[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
-  const [selectedAlbumData, setSelectedAlbumData] = useState<any>(null);
+  const [selectedAlbumData, setSelectedAlbumData] = useState<AlbumSummary | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('masonry');

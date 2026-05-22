@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 interface RouteParams {
@@ -20,8 +21,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     ]);
 
     return NextResponse.json({ success: true, data: category });
-  } catch (error: any) {
-    if (error?.code === "P2002") {
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return NextResponse.json({ success: false, error: "Ya existe esa categoría" }, { status: 400 });
     }
     return NextResponse.json({ success: false, error: "Error al actualizar" }, { status: 500 });

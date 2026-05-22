@@ -23,7 +23,7 @@ async function main() {
     let updatedCount = 0;
 
     // Actualizar cada imagen
-    const updatedImages = images.map((img: any) => {
+    const updatedImages = images.map((img: { thumbnailUrl?: string; [key: string]: unknown }) => {
       if (img.thumbnailUrl && !img.thumbnailUrl.includes('placeholder')) {
         // Cambiar extensión a .webp
         const oldUrl = img.thumbnailUrl;

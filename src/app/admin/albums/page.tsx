@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/components/Toast";
 import { FadeUp } from "@/components/MotionWrap";
+import type { ThemeColors } from "@/contexts/ThemeContext";
 
 interface Album {
   id: string;
@@ -36,7 +37,7 @@ interface Category {
 type SortKey = "year" | "title" | "imageCount";
 type SortDir = "asc" | "desc";
 
-const inputClass = (t: any) =>
+const inputClass = (t: ThemeColors) =>
   `w-full px-3 py-2.5 rounded-xl border ${t.inputBorder} ${t.inputBg} ${t.text} text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none`;
 
 function formatEventDate(dateStr: string | null | undefined) {

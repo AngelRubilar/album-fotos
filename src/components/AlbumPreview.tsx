@@ -21,7 +21,6 @@ function parseFocalPoint(fp: string | null | undefined): string {
 const AlbumPreview = memo(function AlbumPreview({
   albumId,
   year,
-  imageCount,
   className = '',
   coverImageUrl,
   coverFocalPoint,
@@ -50,7 +49,7 @@ const AlbumPreview = memo(function AlbumPreview({
           const data = await res.json();
           if (!isMounted) return;
           if (data.success && data.data?.images) {
-            setPreviewImages(data.data.images.slice(0, 4).map((img: any) =>
+            setPreviewImages(data.data.images.slice(0, 4).map((img: { thumbnailUrl?: string | null; fileUrl?: string | null }) =>
               img.thumbnailUrl?.includes('.webp') ? img.thumbnailUrl : (img.thumbnailUrl || img.fileUrl)
             ).filter(Boolean));
           }

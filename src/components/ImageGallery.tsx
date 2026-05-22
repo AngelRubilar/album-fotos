@@ -9,7 +9,7 @@ interface ImageData {
   fileUrl: string;
   thumbnailUrl?: string;
   originalName: string;
-  description?: string;
+  description?: string | null;
   width?: number;
   height?: number;
   fileSize?: number;
@@ -195,7 +195,6 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
     } else {
       lastTapRef.current = now;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mvScale, mvX, mvY]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
@@ -214,7 +213,6 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
       mvX.set(panRef.current.x0 + (e.clientX - panRef.current.startX));
       mvY.set(panRef.current.y0 + (e.clientY - panRef.current.startY));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mvScale, mvX, mvY]);
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
@@ -227,7 +225,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
       const dx = e.clientX - swipe.startX;
       const dy = e.clientY - swipe.startY;
       if (Math.abs(dx) > 80 && Math.abs(dy) < 60) {
-        dx > 0 ? go(-1) : go(1);
+        if (dx > 0) go(-1); else go(1);
       }
     }
 

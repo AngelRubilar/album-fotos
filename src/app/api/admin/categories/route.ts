@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -23,8 +24,8 @@ export async function POST(request: NextRequest) {
       data: { name: name.trim() },
     });
     return NextResponse.json({ success: true, data: category }, { status: 201 });
-  } catch (error: any) {
-    if (error?.code === "P2002") {
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return NextResponse.json({ success: false, error: "Ya existe esa categoría" }, { status: 400 });
     }
     return NextResponse.json({ success: false, error: "Error al crear categoría" }, { status: 500 });
