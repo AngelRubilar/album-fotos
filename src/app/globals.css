@@ -6,12 +6,24 @@
   --font-display: var(--font-newsreader), ui-serif, Georgia, serif;
 }
 
+/* Texto en serif por defecto (look editorial) */
 body {
+  font-family: var(--font-newsreader), ui-serif, Georgia, serif;
+}
+
+/* La UI fina se mantiene en sans para legibilidad */
+input, textarea, select, button,
+.sidebar-nav-item {
   font-family: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
 }
 
 .font-display {
   font-family: var(--font-newsreader), ui-serif, Georgia, serif;
+}
+
+/* Escape hatch: forzar sans en cualquier elemento (ej. etiquetas pequeñas) */
+.font-ui {
+  font-family: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ===== SIDEBAR: posicionamiento base (funciona antes de hidratación JS) ===== */
