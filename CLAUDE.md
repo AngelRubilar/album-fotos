@@ -7,6 +7,7 @@
 - **Sharp** para procesamiento de imágenes y thumbnails
 - **Tailwind CSS 4**
 - **Docker** (app + postgres via `docker-compose.yml`)
+- **pnpm 10.33.0** (corepack)
 
 ## Comandos clave
 
@@ -21,19 +22,19 @@ docker compose logs -f app
 docker compose down
 
 # Seed inicial de la BD
-npm run db:seed
+pnpm db:seed
 
 # Generar thumbnails de todas las imágenes en /public/uploads/
-npm run generate-thumbnails
+pnpm generate-thumbnails
 
 # Corregir orientación EXIF de imágenes originales
-npm run fix-orientation
+pnpm fix-orientation
 
 # Corregir dimensiones en BD desde thumbnails (fuente de verdad)
-DATABASE_URL="postgresql://postgres:password@localhost:5432/album_fotos?schema=public" npm run fix-db-dimensions
+DATABASE_URL="postgresql://postgres:password@localhost:5432/album_fotos?schema=public" pnpm fix-db-dimensions
 
 # Generar blur placeholders
-npm run generate-blur
+pnpm generate-blur
 ```
 
 ## Arquitectura
@@ -59,10 +60,16 @@ portrait (`height > width`) o landscape. Si esos valores están invertidos (dime
 del sensor sin corregir EXIF), todas las fotos aparecen como landscape.
 
 Fuente de verdad para las dimensiones: el thumbnail `.webp` generado con `sharp().rotate()`.
-Para re-sincronizar BD con thumbnails: `npm run fix-db-dimensions`.
+Para re-sincronizar BD con thumbnails: `pnpm fix-db-dimensions`.
 
 ## Reglas de commits
 
 - Mensajes en **español**
 - No mencionar Claude ni herramientas de IA
 - Prefijos: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
+
+---
+
+Notas locales de despliegue (no versionadas): ver `CLAUDE.local.md` si existe.
+
+@CLAUDE.local.md

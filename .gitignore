@@ -64,3 +64,6 @@ next-env.d.ts
 /backups/
 /backupsmigracion*/
 nul
+
+# Notas locales (no versionar)
+CLAUDE.local.md
