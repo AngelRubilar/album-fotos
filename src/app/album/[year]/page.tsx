@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -30,6 +30,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
   const { t } = useTheme();
   const { addToast } = useToast();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [year, setYear] = useState('');
   const [images, setImages] = useState<AlbumImage[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,6 +68,16 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
     setLayoutMode(mode);
     localStorage.setItem('album-layout', mode);
   };
+
+  // Navegación por URL: abrir un álbum empuja ?album= al historial, así el
+  // botón "atrás" del navegador/teléfono vuelve a la grilla de álbumes.
+  const openAlbum = useCallback((albumId: string) => {
+    router.push(`/album/${year}?album=${albumId}`);
+  }, [router, year]);
+
+  const backToYear = useCallback(() => {
+    router.push(`/album/${year}`);
+  }, [router, year]);
 
   useEffect(() => { params.then(({ year }) => setYear(year)); }, [params]);
 
@@ -122,27 +133,30 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
     } catch { addToast('Error al eliminar', 'error'); }
   };
 
+  // Cargar la lista de sub-álbumes del año (solo cuando cambia el año)
+  useEffect(() => {
+    if (!year) return;
+    setLoading(true);
+    fetch(`/api/albums/year/${year}`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setSubAlbums(d.data); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [year]);
+
+  // Reaccionar al ?album= de la URL: cargar imágenes o volver a la grilla
   useEffect(() => {
     if (!year) return;
     const albumParam = searchParams.get('album');
-    fetch(`/api/albums/year/${year}`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) {
-          setSubAlbums(d.data);
-          if (albumParam) {
-            loadAlbumImages(albumParam);
-          } else {
-            setSelectedAlbum(null);
-            setSelectedAlbumData(null);
-            setImages([]);
-            setHasMore(false);
-            setTotalImages(0);
-          }
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    if (albumParam) {
+      loadAlbumImages(albumParam);
+    } else {
+      setSelectedAlbum(null);
+      setSelectedAlbumData(null);
+      setImages([]);
+      setHasMore(false);
+      setTotalImages(0);
+    }
   }, [year, searchParams, loadAlbumImages]);
 
   const filteredAlbums = useMemo(() =>
@@ -183,7 +197,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
             </svg>
             {selectedAlbum ? (
               <>
-                <button onClick={() => { setSelectedAlbum(null); setImages([]); setHasMore(false); }} className="hover:underline">{year}</button>
+                <button onClick={backToYear} className="hover:underline">{year}</button>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -207,7 +221,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
             {subAlbums.map((album) => (
               <button
                 key={album.id}
-                onClick={() => loadAlbumImages(album.id)}
+                onClick={() => openAlbum(album.id)}
                 className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                   selectedAlbum === album.id
                     ? 'btn-glass-accent text-white'
@@ -288,7 +302,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
             {filteredAlbums.map((album) => (
               <StaggerItem
                 key={album.id}
-                onClick={() => loadAlbumImages(album.id)}
+                onClick={() => openAlbum(album.id)}
                 className={`cursor-pointer rounded-2xl overflow-hidden ${t.glassCard} glass-card`}
               >
                 <div className="aspect-[16/10] relative overflow-hidden">

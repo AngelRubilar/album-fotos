@@ -33,7 +33,7 @@ export default function Sidebar() {
     <>
       {/* Mobile hamburger */}
       <button
-        className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl ${t.glassCard}`}
+        className={`md:hidden fixed hamburger-fab z-50 p-2 rounded-xl ${t.glassCard}`}
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label={mobileOpen ? 'Cerrar menu' : 'Abrir menu'}
       >
