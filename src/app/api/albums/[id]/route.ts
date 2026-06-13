@@ -91,9 +91,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const folderChanged = !!oldFolder && newFolderName !== oldFolder;
 
     if (folderChanged) {
-      // renombrar en disco ANTES de la transacción; si falla, no tocamos la BD
+      // renombrar uploads ANTES de la transacción; si falla, no tocamos la BD
       await rename(albumUploadDir(existing.year, oldFolder!), albumUploadDir(existing.year, newFolderName!));
-      await rename(albumThumbDir(existing.year, oldFolder!), albumThumbDir(existing.year, newFolderName!));
+      // renombrar thumbnails; si falla, revertir uploads
+      try {
+        await rename(albumThumbDir(existing.year, oldFolder!), albumThumbDir(existing.year, newFolderName!));
+      } catch (thumbErr) {
+        await rename(albumUploadDir(existing.year, newFolderName!), albumUploadDir(existing.year, oldFolder!)).catch(() => {});
+        throw thumbErr;
+      }
     }
 
     const oldPrefixUp = `/uploads/${existing.year}/${oldFolder}/`;
@@ -101,7 +107,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const oldPrefixTh = `/thumbnails/${existing.year}/${oldFolder}/`;
     const newPrefixTh = `/thumbnails/${existing.year}/${newFolderName}/`;
 
-    const updated = await prisma.$transaction(async (tx) => {
+    let updated;
+    try {
+    updated = await prisma.$transaction(async (tx) => {
       if (folderChanged) {
         const imgs = await tx.image.findMany({ where: { albumId: id } });
         for (const img of imgs) {
@@ -140,6 +148,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       });
       return album;
     });
+    } catch (txErr) {
+      // La transacción falló: revertir ambos renames de disco
+      if (folderChanged) {
+        await rename(albumThumbDir(existing.year, newFolderName!), albumThumbDir(existing.year, oldFolder!)).catch(() => {});
+        await rename(albumUploadDir(existing.year, newFolderName!), albumUploadDir(existing.year, oldFolder!)).catch(() => {});
+      }
+      throw txErr;
+    }
 
     return NextResponse.json({ success: true, data: formatAlbum(updated) });
   } catch (error) {
