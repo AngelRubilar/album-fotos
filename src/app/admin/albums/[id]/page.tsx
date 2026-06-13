@@ -530,7 +530,7 @@ export default function AlbumPhotosPage({ params }: { params: Promise<{ id: stri
                   </div>
 
                   {/* Botones acción — visibles solo en hover */}
-                  <div className="self-end flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="action-touch self-end flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     {/* Portada del álbum */}
                     <button
                       onClick={() => openFocalModal(photo, "album")}

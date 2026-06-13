@@ -52,8 +52,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <head>
+        {/* Aplica el tema guardado ANTES de pintar para evitar el flash claro
+            en modo oscuro (FOUC). Debe ir antes que el resto. */}
+        <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem('album-theme')==='dark'){document.documentElement.className='dark'}}catch(e){}` }} />
         <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}` }} />
       </head>
       <body className={`${newsreader.variable} ${hanken.variable} antialiased`}>

@@ -89,7 +89,14 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [currentTheme, setCurrentTheme] = useState<ThemeType>('light');
+  // Lee la clase que el script inline de <head> ya aplicó (evita FOUC y el
+  // parpadeo de colores de componentes en la primera hidratación).
+  const [currentTheme, setCurrentTheme] = useState<ThemeType>(() => {
+    if (typeof document !== 'undefined' && document.documentElement.classList.contains('dark')) {
+      return 'dark';
+    }
+    return 'light';
+  });
 
   useEffect(() => {
     const saved = localStorage.getItem('album-theme') as ThemeType;

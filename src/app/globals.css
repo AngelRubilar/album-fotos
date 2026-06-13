@@ -44,6 +44,15 @@ input, textarea, select, button,
   left: calc(env(safe-area-inset-left, 0px) + 0.75rem);
 }
 
+/* ===== ACCIONES TÁCTILES =====
+   En dispositivos sin hover (táctil) los botones que normalmente se revelan
+   al pasar el cursor quedan inaccesibles. Esto los muestra siempre. */
+@media (hover: none) {
+  .action-touch {
+    opacity: 1 !important;
+  }
+}
+
 /* ===== SIDEBAR: posicionamiento base (funciona antes de hidratación JS) ===== */
 .sidebar-base {
   position: fixed;
