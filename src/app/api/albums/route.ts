@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { mkdir } from 'fs/promises';
 import { prisma } from '@/lib/prisma';
+import { slugify, uniqueSlug, albumUploadDir, albumThumbDir } from '@/lib/storage';
 
 // GET /api/albums - Obtener todos los álbumes
 export async function GET() {
@@ -49,6 +51,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Año y título son requeridos' }, { status: 400 });
     }
 
+    const yearInt = parseInt(year);
+    if (!Number.isInteger(yearInt)) {
+      return NextResponse.json({ success: false, error: 'Año inválido' }, { status: 400 });
+    }
+
     // Resolver nombre de categoría si viene categoryId
     let categoryName: string | null = null;
     if (categoryId) {
@@ -58,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar duplicado
     const existingAlbum = await prisma.album.findFirst({
-      where: { year: parseInt(year), title: title.trim(), subAlbum: categoryName }
+      where: { year: yearInt, title: title.trim(), subAlbum: categoryName }
     });
     if (existingAlbum) {
       return NextResponse.json(
@@ -67,17 +74,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sameYear = await prisma.album.findMany({
+      where: { year: yearInt },
+      select: { folderName: true },
+    });
+    const takenFolders = new Set(
+      sameYear.map((a) => a.folderName).filter((f): f is string => !!f)
+    );
+    const folderName = uniqueSlug(slugify(title.trim()), takenFolders);
+
     const newAlbum = await prisma.album.create({
       data: {
-        year: parseInt(year),
+        year: yearInt,
         title: title.trim(),
         description: description?.trim() || null,
         categoryId: categoryId || null,
         subAlbum: categoryName,
         eventDate: eventDate ? new Date(eventDate) : null,
+        folderName,
       },
       include: { category: { select: { id: true, name: true } } }
     });
+
+    await mkdir(albumUploadDir(yearInt, folderName), { recursive: true });
+    await mkdir(albumThumbDir(yearInt, folderName), { recursive: true });
 
     return NextResponse.json({
       success: true,
@@ -91,6 +111,7 @@ export async function POST(request: NextRequest) {
         category: newAlbum.category,
         eventDate: newAlbum.eventDate,
         coverImageUrl: newAlbum.coverImageUrl,
+        folderName: newAlbum.folderName,
         imageCount: 0,
         createdAt: newAlbum.createdAt
       },

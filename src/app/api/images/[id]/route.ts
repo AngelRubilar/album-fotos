@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { unlink } from 'fs/promises';
-import path from 'path';
+import { safeResolve, UPLOADS_BASE, THUMBS_BASE } from '@/lib/storage';
 
 interface RouteParams {
   params: Promise<{
@@ -83,29 +83,17 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
     // Eliminar archivos físicos si existen
     try {
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-      const thumbnailsDir = path.join(process.cwd(), 'public', 'thumbnails');
-
-      const filePath = path.join(uploadsDir, image.filename);
-
-      // Obtener nombre del thumbnail (puede tener extensión .webp)
-      const thumbnailBaseName = path.basename(image.filename, path.extname(image.filename));
-      const thumbnailPath = path.join(thumbnailsDir, `${thumbnailBaseName}.webp`);
-
-      // Intentar eliminar archivos (no fallar si no existen)
+      const rel = image.fileUrl.replace(/^\/uploads\//, '');
+      await unlink(safeResolve(UPLOADS_BASE, rel));
+    } catch { console.warn('Archivo principal no encontrado:', image.fileUrl); }
+    if (image.thumbnailUrl) {
       try {
-        await unlink(filePath);
-      } catch {
-        console.warn('Archivo principal no encontrado:', filePath);
-      }
-
-      try {
-        await unlink(thumbnailPath);
-      } catch {
-        console.warn('Miniatura no encontrada:', thumbnailPath);
-      }
-    } catch (error) {
-      console.warn('Error eliminando archivos físicos:', error);
+        if (image.thumbnailUrl.startsWith('/thumbnails/')) {
+          await unlink(safeResolve(THUMBS_BASE, image.thumbnailUrl.replace(/^\/thumbnails\//, '')));
+        } else if (image.thumbnailUrl.startsWith('/uploads/')) {
+          await unlink(safeResolve(UPLOADS_BASE, image.thumbnailUrl.replace(/^\/uploads\//, '')));
+        }
+      } catch { console.warn('Miniatura no encontrada:', image.thumbnailUrl); }
     }
 
     // Eliminar de la base de datos

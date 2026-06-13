@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, writeFile, readdir } from 'fs/promises';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
 import { generateThumbnailForUpload } from '@/lib/thumbnail';
 import sharp from 'sharp';
+import {
+  slugify,
+  uniqueSlug,
+  sanitizeName,
+  uniqueName,
+  albumUploadDir,
+  albumThumbDir,
+  uploadUrl,
+  thumbUrl,
+} from '@/lib/storage';
 
 // Configuración para permitir archivos grandes (500MB máximo)
 export const config = {
@@ -51,6 +61,79 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // --- Resolver el álbum UNA vez ANTES del loop ---
+    let targetAlbumId: string;
+    let targetAlbum: Awaited<ReturnType<typeof prisma.album.findUnique>>;
+
+    if (albumId) {
+      // Usar el álbum específico seleccionado
+      targetAlbum = await prisma.album.findUnique({
+        where: { id: albumId },
+      });
+
+      if (!targetAlbum) {
+        return NextResponse.json(
+          { success: false, error: 'No existe el álbum seleccionado' },
+          { status: 400 }
+        );
+      }
+      targetAlbumId = albumId;
+    } else {
+      // Compatibilidad con el método anterior (por año) - buscar primer álbum del año
+      const yearInt = parseInt(albumYear);
+      if (isNaN(yearInt)) {
+        return NextResponse.json(
+          { success: false, error: `No existe un álbum para el año ${albumYear}` },
+          { status: 400 }
+        );
+      }
+      targetAlbum = await prisma.album.findFirst({
+        where: {
+          year: yearInt,
+          subAlbum: null, // Buscar álbum principal del año
+        },
+      });
+
+      if (!targetAlbum) {
+        // Si no hay álbum principal, buscar cualquier álbum del año
+        targetAlbum = await prisma.album.findFirst({
+          where: { year: yearInt },
+        });
+      }
+
+      if (!targetAlbum) {
+        return NextResponse.json(
+          { success: false, error: `No existe un álbum para el año ${albumYear}` },
+          { status: 400 }
+        );
+      }
+      targetAlbumId = targetAlbum.id;
+    }
+
+    // Asegurar que el álbum tiene folderName (caso pre-migración)
+    if (!targetAlbum.folderName) {
+      const sameYear = await prisma.album.findMany({
+        where: { year: targetAlbum.year },
+        select: { folderName: true },
+      });
+      const taken = new Set(
+        sameYear.map((a) => a.folderName).filter((f): f is string => !!f)
+      );
+      const fn = uniqueSlug(slugify(targetAlbum.title), taken);
+      await prisma.album.update({ where: { id: targetAlbum.id }, data: { folderName: fn } });
+      targetAlbum = { ...targetAlbum, folderName: fn };
+    }
+
+    const year = targetAlbum.year;
+    const folderName = targetAlbum.folderName!;
+    const uploadsDir = albumUploadDir(year, folderName);
+    const thumbsDir = albumThumbDir(year, folderName);
+    await mkdir(uploadsDir, { recursive: true });
+    await mkdir(thumbsDir, { recursive: true });
+
+    // Set para detectar colisiones de nombre dentro de esta tanda
+    const usedNames = new Set<string>(await readdir(uploadsDir).catch(() => []));
+
     const uploadedImages = [];
     const skippedFiles: { name: string; reason: string }[] = [];
 
@@ -67,126 +150,65 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Crear nombre único para el archivo
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substring(2, 11);
-      const fileExtension = path.extname(file.name);
-      const fileName = `${timestamp}_${randomId}${fileExtension}`;
-
-      // Crear directorios si no existen
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-      const thumbnailsDir = path.join(process.cwd(), 'public', 'thumbnails');
-
-      try {
-        await mkdir(uploadsDir, { recursive: true });
-        await mkdir(thumbnailsDir, { recursive: true });
-      } catch {
-        // Los directorios ya existen
-      }
-
-      // Write file to disk, auto-rotating based on EXIF orientation
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const filePath = path.join(uploadsDir, fileName);
 
-      // Auto-rotate to fix EXIF orientation (fotos de celular)
+      // Nombre = original saneado, resolviendo colisión
+      const destName = uniqueName(sanitizeName(file.name), usedNames);
+      usedNames.add(destName);
+      const filePath = path.join(uploadsDir, destName);
+
+      // GUARDAR ORIGINAL BYTE-A-BYTE (sin re-encode → calidad y metadatos intactos)
+      await writeFile(filePath, buffer);
+
+      // Miniatura WebP aparte (rotate hornea la orientación EXIF en el derivado)
+      // generateThumbnailForUpload escribe destName con extensión .webp en thumbsDir
+      const thumbFilename = destName.replace(/\.[^.]+$/, '.webp');
+      let thumbUrlValue = thumbUrl(year, folderName, thumbFilename);
       try {
-        const rotatedBuffer = await sharp(buffer).rotate().toBuffer();
-        await writeFile(filePath, rotatedBuffer);
+        await generateThumbnailForUpload(destName, uploadsDir, thumbsDir);
       } catch {
-        // Si falla la rotacion, guardar el original
-        await writeFile(filePath, buffer);
+        console.warn(`No se pudo generar thumbnail para ${destName}`);
+        thumbUrlValue = uploadUrl(year, folderName, destName); // fallback: usa el original
       }
 
-      // Generate thumbnail from file on disk (not from buffer)
-      let thumbnailUrl = `/thumbnails/${fileName}`;
-      try {
-        thumbnailUrl = await generateThumbnailForUpload(fileName, uploadsDir, thumbnailsDir);
-      } catch {
-        console.warn(`Could not generate thumbnail for ${fileName}, using fallback`);
-        thumbnailUrl = `/uploads/${fileName}`;
-      }
-
-      // Read metadata from the already-rotated file
+      // Dimensiones reales POST-rotación (para el masonry)
       let realWidth = 800;
       let realHeight = 600;
       let blurDataUrl: string | null = null;
       try {
-        const metadata = await sharp(filePath).metadata();
-        realWidth = metadata.width || 800;
-        realHeight = metadata.height || 600;
+        const meta = await sharp(buffer).rotate().metadata();
+        realWidth = meta.width || 800;
+        realHeight = meta.height || 600;
       } catch {
-        console.warn(`Could not read image metadata for ${fileName}, using defaults`);
+        /* HEIC no decodificable u otro: usar defaults */
       }
-
-      // Generate LQIP blur placeholder (~20px base64)
       try {
-        const blurBuffer = await sharp(filePath)
+        const blurBuffer = await sharp(buffer)
+          .rotate()
           .resize(20, 20, { fit: 'inside' })
           .jpeg({ quality: 40 })
           .toBuffer();
         blurDataUrl = `data:image/jpeg;base64,${blurBuffer.toString('base64')}`;
       } catch {
-        console.warn(`Could not generate blur placeholder for ${fileName}`);
-      }
-
-      // Determinar el álbum a usar
-      let targetAlbumId: string;
-      let targetAlbum;
-
-      if (albumId) {
-        // Usar el álbum específico seleccionado
-        targetAlbum = await prisma.album.findUnique({
-          where: { id: albumId }
-        });
-
-        if (!targetAlbum) {
-          return NextResponse.json(
-            { success: false, error: 'No existe el álbum seleccionado' },
-            { status: 400 }
-          );
-        }
-        targetAlbumId = albumId;
-      } else {
-        // Compatibilidad con el método anterior (por año) - buscar primer álbum del año
-        targetAlbum = await prisma.album.findFirst({
-          where: {
-            year: parseInt(albumYear),
-            subAlbum: null // Buscar álbum principal del año
-          }
-        });
-
-        if (!targetAlbum) {
-          // Si no hay álbum principal, buscar cualquier álbum del año
-          targetAlbum = await prisma.album.findFirst({
-            where: { year: parseInt(albumYear) }
-          });
-        }
-
-        if (!targetAlbum) {
-          return NextResponse.json(
-            { success: false, error: `No existe un álbum para el año ${albumYear}` },
-            { status: 400 }
-          );
-        }
-        targetAlbumId = targetAlbum.id;
+        /* sin blur */
       }
 
       // Crear entrada de imagen en la base de datos
       const imageData = await prisma.image.create({
         data: {
           albumId: targetAlbumId,
-          filename: fileName,
+          filename: destName,
           originalName: file.name,
-          fileUrl: `/uploads/${fileName}`,
-          thumbnailUrl: thumbnailUrl,
+          fileUrl: uploadUrl(year, folderName, destName),
+          thumbnailUrl: thumbUrlValue,
           fileSize: file.size,
           width: realWidth,
           height: realHeight,
           mimeType: file.type,
           description: '',
           blurDataUrl,
-        }
+        },
       });
 
       uploadedImages.push({
@@ -201,7 +223,7 @@ export async function POST(request: NextRequest) {
         mimeType: imageData.mimeType,
         description: imageData.description,
         albumYear: targetAlbum.year,
-        uploadedAt: imageData.uploadedAt.toISOString()
+        uploadedAt: imageData.uploadedAt.toISOString(),
       });
     }
 
@@ -216,10 +238,10 @@ export async function POST(request: NextRequest) {
       success: true,
       data: uploadedImages,
       skipped: skippedFiles,
-      message: `${uploadedImages.length} imagen(es) subida(s) exitosamente`
-        + (skippedFiles.length > 0 ? `, ${skippedFiles.length} omitida(s)` : '')
+      message:
+        `${uploadedImages.length} imagen(es) subida(s) exitosamente` +
+        (skippedFiles.length > 0 ? `, ${skippedFiles.length} omitida(s)` : ''),
     });
-
   } catch (error) {
     console.error('Error uploading images:', error);
     return NextResponse.json(
@@ -246,17 +268,16 @@ export async function GET(request: NextRequest) {
     const images = await prisma.image.findMany({
       where: {
         album: {
-          year: parseInt(albumYear)
-        }
+          year: parseInt(albumYear),
+        },
       },
-      orderBy: { uploadedAt: 'desc' }
+      orderBy: { uploadedAt: 'desc' },
     });
 
     return NextResponse.json({
       success: true,
-      data: images
+      data: images,
     });
-
   } catch (error) {
     console.error('Error fetching images:', error);
     return NextResponse.json(
