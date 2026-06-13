@@ -52,8 +52,58 @@ async function main() {
     await prisma.image.update({ where: { id: img.id }, data: { fileUrl: newFileUrl, thumbnailUrl: newThumbUrl } });
   }
 
-  // 3) covers
-  console.log('Migración completa. Revisa covers (Album.coverImageUrl / YearCover) manualmente si apuntan a rutas viejas.');
+  // 3) reescribir covers de álbum que aún apunten a rutas planas
+  const albumsRefreshed = await prisma.album.findMany();
+  for (const a of albumsRefreshed) {
+    if (!a.coverImageUrl || !a.folderName) continue;
+    const base = path.basename(a.coverImageUrl);
+    // Ya está en ruta anidada → idempotente
+    const isNested = a.coverImageUrl.includes(`/${a.year}/${a.folderName}/`);
+    if (isNested) continue;
+
+    let newCover: string | null = null;
+    if (a.coverImageUrl.startsWith('/thumbnails/')) {
+      newCover = thumbUrl(a.year, a.folderName, base);
+    } else if (a.coverImageUrl.startsWith('/uploads/')) {
+      newCover = uploadUrl(a.year, a.folderName, base);
+    }
+    if (newCover) {
+      await prisma.album.update({ where: { id: a.id }, data: { coverImageUrl: newCover } });
+      console.log(`Album cover ${a.id}: ${a.coverImageUrl} → ${newCover}`);
+    }
+  }
+
+  // 4) reescribir covers de YearCover que aún apunten a rutas planas
+  const yearCovers = await prisma.yearCover.findMany();
+  const imagesByAlbumYear = new Map<number, Array<{ fileUrl: string; thumbnailUrl: string | null }>>();
+  for (const img of await prisma.image.findMany({ include: { album: { select: { year: true } } } })) {
+    const y = img.album?.year;
+    if (y === undefined) continue;
+    const list = imagesByAlbumYear.get(y) ?? [];
+    list.push({ fileUrl: img.fileUrl, thumbnailUrl: img.thumbnailUrl });
+    imagesByAlbumYear.set(y, list);
+  }
+  for (const yc of yearCovers) {
+    if (!yc.coverImageUrl) continue;
+    const base = path.basename(yc.coverImageUrl);
+    const isNested = /\/(uploads|thumbnails)\/\d{4}\//.test(yc.coverImageUrl);
+    if (isNested) continue;
+
+    // Buscar la imagen del año que tenga ese basename
+    const candidates = imagesByAlbumYear.get(yc.year) ?? [];
+    const match = candidates.find(
+      (img) => path.basename(img.fileUrl) === base || (img.thumbnailUrl && path.basename(img.thumbnailUrl) === base)
+    );
+    if (match) {
+      const newCover = match.thumbnailUrl ?? match.fileUrl;
+      await prisma.yearCover.update({ where: { year: yc.year }, data: { coverImageUrl: newCover } });
+      console.log(`YearCover ${yc.year}: ${yc.coverImageUrl} → ${newCover}`);
+    } else {
+      console.warn(`YearCover ${yc.year}: no se encontró imagen con basename '${base}' para reescribir cover`);
+    }
+  }
+
+  console.log('Migración completa.');
 }
 
 main().then(() => prisma.$disconnect()).catch(async (e) => { console.error(e); await prisma.$disconnect(); process.exit(1); });

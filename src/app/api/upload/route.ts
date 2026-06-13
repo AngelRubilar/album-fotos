@@ -80,9 +80,16 @@ export async function POST(request: NextRequest) {
       targetAlbumId = albumId;
     } else {
       // Compatibilidad con el método anterior (por año) - buscar primer álbum del año
+      const yearInt = parseInt(albumYear);
+      if (isNaN(yearInt)) {
+        return NextResponse.json(
+          { success: false, error: `No existe un álbum para el año ${albumYear}` },
+          { status: 400 }
+        );
+      }
       targetAlbum = await prisma.album.findFirst({
         where: {
-          year: parseInt(albumYear),
+          year: yearInt,
           subAlbum: null, // Buscar álbum principal del año
         },
       });
@@ -90,7 +97,7 @@ export async function POST(request: NextRequest) {
       if (!targetAlbum) {
         // Si no hay álbum principal, buscar cualquier álbum del año
         targetAlbum = await prisma.album.findFirst({
-          where: { year: parseInt(albumYear) },
+          where: { year: yearInt },
         });
       }
 

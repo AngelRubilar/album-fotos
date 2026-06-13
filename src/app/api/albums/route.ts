@@ -70,6 +70,9 @@ export async function POST(request: NextRequest) {
     }
 
     const yearInt = parseInt(year);
+    if (!Number.isInteger(yearInt) || isNaN(yearInt)) {
+      return NextResponse.json({ success: false, error: 'Año inválido' }, { status: 400 });
+    }
     const sameYear = await prisma.album.findMany({
       where: { year: yearInt },
       select: { folderName: true },
