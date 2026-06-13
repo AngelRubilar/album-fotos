@@ -51,6 +51,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Año y título son requeridos' }, { status: 400 });
     }
 
+    const yearInt = parseInt(year);
+    if (!Number.isInteger(yearInt)) {
+      return NextResponse.json({ success: false, error: 'Año inválido' }, { status: 400 });
+    }
+
     // Resolver nombre de categoría si viene categoryId
     let categoryName: string | null = null;
     if (categoryId) {
@@ -60,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar duplicado
     const existingAlbum = await prisma.album.findFirst({
-      where: { year: parseInt(year), title: title.trim(), subAlbum: categoryName }
+      where: { year: yearInt, title: title.trim(), subAlbum: categoryName }
     });
     if (existingAlbum) {
       return NextResponse.json(
@@ -69,10 +74,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const yearInt = parseInt(year);
-    if (!Number.isInteger(yearInt) || isNaN(yearInt)) {
-      return NextResponse.json({ success: false, error: 'Año inválido' }, { status: 400 });
-    }
     const sameYear = await prisma.album.findMany({
       where: { year: yearInt },
       select: { folderName: true },
