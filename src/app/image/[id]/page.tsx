@@ -66,7 +66,7 @@ export default function ImagePage({ params }: { params: Promise<{ id: string }> 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <FadeUp>
           {/* Breadcrumb */}
-          <nav className={`flex flex-wrap items-center gap-1.5 text-sm ${t.textMuted} mb-6 md:ml-0 ml-10`}>
+          <nav className={`flex flex-wrap items-center gap-1.5 text-sm ${t.textMuted} mb-6`}>
             <Link href="/" className="hover:underline">Inicio</Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

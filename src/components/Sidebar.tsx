@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 export default function Sidebar() {
   const { t, isDark, toggleTheme } = useTheme();
+  const { open, setOpen } = useSidebar();
   const pathname = usePathname();
   const [years, setYears] = useState<{ year: number; totalImages: number }[]>([]);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/years')
@@ -17,10 +18,6 @@ export default function Sidebar() {
       .then(d => { if (d.success) setYears(d.data); })
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
 
   const activeYear = pathname.match(/\/album\/(\d+)/)?.[1];
 
@@ -31,30 +28,15 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile hamburger */}
-      <button
-        className={`md:hidden fixed hamburger-fab z-50 p-2 rounded-xl ${t.glassCard}`}
-        onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label={mobileOpen ? 'Cerrar menu' : 'Abrir menu'}
-      >
-        <svg className={`w-5 h-5 ${t.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {mobileOpen ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          )}
-        </svg>
-      </button>
-
       {/* Mobile overlay */}
-      {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+      {open && (
+        <div className="md:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`sidebar-base ${mobileOpen ? 'sidebar-open' : ''} ${t.sidebarBg}`}>
-        {/* Header */}
-        <div className="px-5 pt-6 pb-4">
+      <aside className={`sidebar-base ${open ? 'sidebar-open' : ''} ${t.sidebarBg}`}>
+        {/* Header (en móvil el título lo muestra la barra superior) */}
+        <div className="hidden md:block px-5 pt-6 pb-4">
           <Link href="/" className="block">
             <h1 className={`text-lg font-bold ${t.text}`}>Album de Fotos</h1>
             <p className={`text-xs ${t.textMuted} mt-0.5`}>Tu galeria personal</p>
@@ -62,7 +44,7 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 overflow-y-auto">
+        <nav className="flex-1 px-3 pt-4 md:pt-0 overflow-y-auto">
           <div className="space-y-0.5">
             <Link
               href="/"

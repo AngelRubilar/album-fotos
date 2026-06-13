@@ -60,8 +60,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const sidebar = (
     <aside className={`sidebar-base ${mobileOpen ? 'sidebar-open' : ''} ${t.sidebarBg}`}>
-      {/* Header */}
-      <div className="px-5 pt-6 pb-4">
+      {/* Header (en móvil el título lo muestra la barra superior) */}
+      <div className="hidden md:block px-5 pt-6 pb-4">
         <Link href="/admin" className="block">
           <h1 className={`text-lg font-bold ${t.text}`}>Panel Admin</h1>
           <p className={`text-xs ${t.textMuted} mt-0.5`}>Gestión del álbum</p>
@@ -69,7 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Volver al album */}
-      <div className="px-3 mb-2">
+      <div className="px-3 mb-2 pt-4 md:pt-0">
         <Link
           href="/"
           className={`sidebar-nav-item ${t.navItem}`}
@@ -131,21 +131,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen overflow-hidden w-full">
-      {/* Mobile hamburger */}
-      <button
-        className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-xl ${t.glassCard}`}
-        onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
-      >
-        <svg className={`w-5 h-5 ${t.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {mobileOpen ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          )}
-        </svg>
-      </button>
-
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
@@ -156,8 +141,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {sidebar}
 
-      <div className="flex-1 h-screen overflow-y-auto glass-bg">
-        {children}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+        {/* Barra superior móvil */}
+        <header className={`md:hidden shrink-0 relative z-50 flex items-center gap-1 h-14 px-2 ${t.sidebarBg} border-b ${t.border}`}>
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={mobileOpen}
+            className={`h-11 w-11 flex items-center justify-center rounded-xl ${t.navItem}`}
+          >
+            <svg className={`w-6 h-6 ${t.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {mobileOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+          <Link href="/admin" className={`font-display text-lg font-semibold ${t.text}`}>
+            Panel Admin
+          </Link>
+        </header>
+
+        <div className="flex-1 overflow-y-auto glass-bg">
+          {children}
+        </div>
       </div>
     </div>
   );

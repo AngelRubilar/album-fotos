@@ -222,7 +222,7 @@ export default function AdminAlbumsPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         {/* Header */}
-        <FadeUp className="mb-6 md:ml-0 ml-10">
+        <FadeUp className="mb-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className={`font-display text-2xl font-medium ${t.text}`}>Álbumes</h1>

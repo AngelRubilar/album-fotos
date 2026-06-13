@@ -26,24 +26,6 @@ input, textarea, select, button,
   font-family: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* ===== SAFE AREA (PWA instalada / dispositivos con notch) =====
-   Con viewport-fit=cover + status bar translúcida, el contenido va borde a
-   borde. Sin estos insets, la barra de estado del sistema tapa la parte
-   superior (incl. el botón de menú, que quedaba intocable en móvil). */
-#main-content {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
-}
-
-/* Botón hamburguesa: desplazado por debajo de la barra de estado para que
-   sea tocable en la PWA instalada. */
-.hamburger-fab {
-  top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
-  left: calc(env(safe-area-inset-left, 0px) + 0.75rem);
-}
-
 /* ===== ACCIONES TÁCTILES =====
    En dispositivos sin hover (táctil) los botones que normalmente se revelan
    al pasar el cursor quedan inaccesibles. Esto los muestra siempre. */
@@ -53,18 +35,19 @@ input, textarea, select, button,
   }
 }
 
-/* ===== SIDEBAR: posicionamiento base (funciona antes de hidratación JS) ===== */
+/* ===== SIDEBAR: posicionamiento base (funciona antes de hidratación JS) =====
+   En móvil es un drawer que arranca debajo de la barra superior (3.5rem).
+   En desktop es una columna sticky de altura completa. */
 .sidebar-base {
   position: fixed;
-  top: 0;
+  top: 3.5rem;       /* debajo de la barra superior móvil (h-14) */
   left: 0;
-  height: 100vh;
+  height: calc(100dvh - 3.5rem);
   width: 15rem;      /* w-60 = 240px */
   z-index: 40;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  padding-top: env(safe-area-inset-top, 0px);  /* header del menú bajo la status bar */
   transform: translateX(-100%);  /* oculto en móvil */
   transition: transform 0.3s ease-out;
 }
@@ -72,6 +55,8 @@ input, textarea, select, button,
 @media (min-width: 768px) {
   .sidebar-base {
     position: sticky;
+    top: 0;
+    height: 100vh;
     transform: translateX(0);
   }
 }

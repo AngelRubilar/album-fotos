@@ -98,7 +98,7 @@ export default function AdminCategoriesPage() {
   return (
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <FadeUp className="mb-6 md:ml-0 ml-10">
+        <FadeUp className="mb-6">
           <h1 className={`font-display text-2xl font-medium ${t.text}`}>Categorías</h1>
           <p className={`text-sm ${t.textMuted} mt-1`}>
             Organiza tus álbumes en categorías predefinidas

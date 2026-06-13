@@ -189,7 +189,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
     <div className={`min-h-screen ${t.gradientBg} transition-colors duration-300`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Breadcrumb + Title */}
-        <FadeUp className="mb-8 md:ml-0 ml-10">
+        <FadeUp className="mb-8">
           <nav className={`flex flex-wrap items-center gap-1.5 text-sm ${t.textMuted} mb-3`}>
             <Link href="/" className="hover:underline">Inicio</Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

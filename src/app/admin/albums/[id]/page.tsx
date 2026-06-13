@@ -371,7 +371,7 @@ export default function AlbumPhotosPage({ params }: { params: Promise<{ id: stri
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         {/* Header */}
-        <FadeUp className="mb-6 md:ml-0 ml-10">
+        <FadeUp className="mb-6">
           <div className="flex items-start gap-4 mb-1">
             <Link
               href="/admin/albums"

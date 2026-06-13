@@ -58,7 +58,7 @@ export default function Home() {
     <div className={`min-h-screen transition-colors duration-300 ${t.gradientBg}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
-        <FadeUp className="mb-10 md:ml-0 ml-10">
+        <FadeUp className="mb-10">
           <h1 className={`font-display text-4xl md:text-5xl font-medium tracking-tight ${t.text} mb-2`}>Bienvenido</h1>
           <p className={`${t.textMuted} text-base`}>Tus recuerdos organizados por momentos</p>
         </FadeUp>

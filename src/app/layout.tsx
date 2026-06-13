@@ -2,9 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Newsreader, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 import { ToastProvider } from "@/components/Toast";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ConditionalSidebar from "@/components/ConditionalSidebar";
+import MobileTopBar from "@/components/MobileTopBar";
 
 // Display: serif literario y refinado (títulos, años)
 const newsreader = Newsreader({
@@ -36,14 +38,13 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'Album de Fotos',
   },
 };
 
 export const viewport: Viewport = {
   themeColor: '#2f6b6b',
-  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -65,14 +66,19 @@ export default function RootLayout({
         </a>
         <ThemeProvider>
           <ToastProvider>
-            <div className={`flex h-screen overflow-hidden`}>
-              <ConditionalSidebar />
-              <main id="main-content" className="flex-1 h-screen overflow-y-auto glass-bg">
-                <ErrorBoundary>
-                  {children}
-                </ErrorBoundary>
-              </main>
-            </div>
+            <SidebarProvider>
+              <div className={`flex h-screen overflow-hidden`}>
+                <ConditionalSidebar />
+                <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+                  <MobileTopBar />
+                  <main id="main-content" className="flex-1 overflow-y-auto glass-bg">
+                    <ErrorBoundary>
+                      {children}
+                    </ErrorBoundary>
+                  </main>
+                </div>
+              </div>
+            </SidebarProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>
