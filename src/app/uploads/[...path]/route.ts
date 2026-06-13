@@ -3,63 +3,50 @@ import { stat } from 'fs/promises';
 import { createReadStream } from 'fs';
 import path from 'path';
 import { Readable } from 'stream';
+import { safeResolve, UPLOADS_BASE } from '@/lib/storage';
 
 const mimeTypes: Record<string, string> = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+  '.gif': 'image/gif', '.webp': 'image/webp', '.heic': 'image/heic', '.heif': 'image/heif',
 };
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ filename: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   try {
-    const { filename } = await params;
-    const filePath = path.join(process.cwd(), 'public', 'uploads', filename);
-
-    // Get file stats (size + existence check)
-    let fileStats;
+    const { path: segs } = await params;
+    let filePath: string;
     try {
-      fileStats = await stat(filePath);
+      filePath = safeResolve(UPLOADS_BASE, segs.join('/'));
     } catch {
-      return new NextResponse('File not found', { status: 404 });
+      return new NextResponse('Bad request', { status: 400 });
     }
 
-    const ext = path.extname(filename).toLowerCase();
+    let fileStats;
+    try { fileStats = await stat(filePath); } catch { return new NextResponse('File not found', { status: 404 }); }
+
+    const ext = path.extname(filePath).toLowerCase();
     const mimeType = mimeTypes[ext] || 'application/octet-stream';
     const fileSize = fileStats.size;
-
-    // Handle Range requests (partial content)
     const range = request.headers.get('range');
+
     if (range) {
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-      const chunkSize = end - start + 1;
-
       const stream = createReadStream(filePath, { start, end });
-      const webStream = Readable.toWeb(stream) as ReadableStream;
-
-      return new NextResponse(webStream, {
+      return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
         status: 206,
         headers: {
           'Content-Type': mimeType,
           'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-          'Content-Length': String(chunkSize),
+          'Content-Length': String(end - start + 1),
           'Accept-Ranges': 'bytes',
           'Cache-Control': 'public, max-age=31536000, immutable',
         },
       });
     }
 
-    // Full file streaming
     const stream = createReadStream(filePath);
-    const webStream = Readable.toWeb(stream) as ReadableStream;
-
-    return new NextResponse(webStream, {
+    return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
       status: 200,
       headers: {
         'Content-Type': mimeType,
