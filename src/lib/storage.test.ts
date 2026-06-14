@@ -51,6 +51,18 @@ describe('uniqueSlug', () => {
   });
 });
 
+import { displayName } from './storage';
+
+describe('displayName', () => {
+  test('devuelve la ruta display/<base>.webp', () => {
+    expect(displayName('IMG_1234.jpg')).toBe('display/IMG_1234.webp');
+    expect(displayName('foto.HEIC')).toBe('display/foto.webp');
+  });
+  test('sin extensión', () => {
+    expect(displayName('archivo')).toBe('display/archivo.webp');
+  });
+});
+
 import { safeResolve, uploadUrl, thumbUrl } from './storage';
 import path from 'path';
 

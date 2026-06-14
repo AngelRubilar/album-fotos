@@ -4,6 +4,7 @@ export interface AlbumImage {
   id: string;
   fileUrl: string;
   thumbnailUrl: string;
+  displayUrl?: string | null;
   originalName: string;
   description: string | null;
   width: number;

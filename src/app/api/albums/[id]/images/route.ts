@@ -44,6 +44,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           id: true,
           fileUrl: true,
           thumbnailUrl: true,
+          displayUrl: true,
           originalName: true,
           description: true,
           width: true,

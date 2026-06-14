@@ -95,6 +95,11 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
         }
       } catch { console.warn('Miniatura no encontrada:', image.thumbnailUrl); }
     }
+    if (image.displayUrl && image.displayUrl.startsWith('/thumbnails/')) {
+      try {
+        await unlink(safeResolve(THUMBS_BASE, image.displayUrl.replace(/^\/thumbnails\//, '')));
+      } catch { console.warn('Display no encontrada:', image.displayUrl); }
+    }
 
     // Eliminar de la base de datos
     await prisma.image.delete({

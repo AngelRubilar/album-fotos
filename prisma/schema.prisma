@@ -68,6 +68,7 @@ model Image {
   originalName    String
   fileUrl         String
   thumbnailUrl    String?
+  displayUrl      String?
   fileSize        Int
   width           Int
   height          Int
