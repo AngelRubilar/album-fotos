@@ -8,6 +8,7 @@ interface ImageData {
   id: string;
   fileUrl: string;
   thumbnailUrl?: string;
+  displayUrl?: string | null;
   originalName: string;
   description?: string | null;
   width?: number;
@@ -240,7 +241,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
     if (!isOpen) return;
     [idx - 1, idx + 1]
       .filter(i => i >= 0 && i < images.length)
-      .forEach(i => { const p = new window.Image(); p.src = images[i].fileUrl; });
+      .forEach(i => { const p = new window.Image(); p.src = images[i].displayUrl || images[i].fileUrl; });
   }, [idx, images, isOpen]);
 
   // Focus management
@@ -355,7 +356,7 @@ const ImageGallery = memo(function ImageGallery({ images, currentIndex, isOpen, 
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={img.fileUrl}
+                    src={img.displayUrl || img.fileUrl}
                     alt={img.originalName}
                     className={`max-w-[90vw] max-h-[65vh] object-contain block pointer-events-none transition-opacity duration-200 ${loading ? 'opacity-0' : 'opacity-100'}`}
                     onLoad={() => setLoading(false)}
