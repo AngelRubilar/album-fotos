@@ -73,6 +73,30 @@ export async function generateThumbnailFromBuffer(
     .toFile(outputPath);
 }
 
+const DISPLAY_CONFIG = {
+  maxSize: 2048,
+  quality: 82,
+};
+
+/** Genera la versión "display" (máx 2048px WebP) para el visor, desde un buffer. */
+export async function generateDisplayFromBuffer(
+  buffer: Buffer,
+  outputPath: string
+): Promise<void> {
+  const outputDir = path.dirname(outputPath);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  await sharp(buffer)
+    .rotate()
+    .resize(DISPLAY_CONFIG.maxSize, DISPLAY_CONFIG.maxSize, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .webp({ quality: DISPLAY_CONFIG.quality })
+    .toFile(outputPath);
+}
+
 /**
  * Genera un thumbnail para un archivo subido
  * @param filename Nombre del archivo (ej: "1234_abcd.jpg")

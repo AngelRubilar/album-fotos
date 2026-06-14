@@ -43,6 +43,12 @@ export function uniqueSlug(desired: string, taken: Set<string>): string {
   return `${desired}-${i}`;
 }
 
+/** Nombre del archivo "display" derivado del nombre destino: IMG_1.jpg → IMG_1.display.webp */
+export function displayName(name: string): string {
+  const ext = path.extname(name);
+  return name.slice(0, name.length - ext.length) + '.display.webp';
+}
+
 /** Resuelve `relPath` contra `baseDir` garantizando que no escape (path traversal). Lanza si escapa. */
 export function safeResolve(baseDir: string, relPath: string): string {
   const base = path.resolve(baseDir);

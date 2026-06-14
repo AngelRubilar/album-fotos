@@ -51,6 +51,18 @@ describe('uniqueSlug', () => {
   });
 });
 
+import { displayName } from './storage';
+
+describe('displayName', () => {
+  test('reemplaza la extensión por .display.webp', () => {
+    expect(displayName('IMG_1234.jpg')).toBe('IMG_1234.display.webp');
+    expect(displayName('foto.HEIC')).toBe('foto.display.webp');
+  });
+  test('sin extensión, agrega .display.webp', () => {
+    expect(displayName('archivo')).toBe('archivo.display.webp');
+  });
+});
+
 import { safeResolve, uploadUrl, thumbUrl } from './storage';
 import path from 'path';
 
