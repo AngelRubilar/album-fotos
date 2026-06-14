@@ -43,10 +43,16 @@ export function uniqueSlug(desired: string, taken: Set<string>): string {
   return `${desired}-${i}`;
 }
 
-/** Nombre del archivo "display" derivado del nombre destino: IMG_1.jpg → IMG_1.display.webp */
+/**
+ * Ruta relativa (dentro de la carpeta de thumbnails del álbum) de la variante
+ * "display" derivada del nombre destino: IMG_1.jpg → display/IMG_1.webp
+ * La subcarpeta `display/` separa el namespace de las miniaturas para que un
+ * original llamado p.ej. "x.display.jpg" no pueda colisionar con la display de "x.jpg".
+ */
 export function displayName(name: string): string {
   const ext = path.extname(name);
-  return name.slice(0, name.length - ext.length) + '.display.webp';
+  const base = name.slice(0, name.length - ext.length);
+  return `display/${base}.webp`;
 }
 
 /** Resuelve `relPath` contra `baseDir` garantizando que no escape (path traversal). Lanza si escapa. */

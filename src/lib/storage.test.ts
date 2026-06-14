@@ -54,12 +54,12 @@ describe('uniqueSlug', () => {
 import { displayName } from './storage';
 
 describe('displayName', () => {
-  test('reemplaza la extensión por .display.webp', () => {
-    expect(displayName('IMG_1234.jpg')).toBe('IMG_1234.display.webp');
-    expect(displayName('foto.HEIC')).toBe('foto.display.webp');
+  test('devuelve la ruta display/<base>.webp', () => {
+    expect(displayName('IMG_1234.jpg')).toBe('display/IMG_1234.webp');
+    expect(displayName('foto.HEIC')).toBe('display/foto.webp');
   });
-  test('sin extensión, agrega .display.webp', () => {
-    expect(displayName('archivo')).toBe('archivo.display.webp');
+  test('sin extensión', () => {
+    expect(displayName('archivo')).toBe('display/archivo.webp');
   });
 });
 
