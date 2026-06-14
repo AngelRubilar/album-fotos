@@ -251,6 +251,7 @@ export async function POST(request: NextRequest) {
         originalName: imageData.originalName,
         fileUrl: imageData.fileUrl,
         thumbnailUrl: imageData.thumbnailUrl,
+        displayUrl: imageData.displayUrl,
         fileSize: imageData.fileSize,
         width: imageData.width,
         height: imageData.height,
