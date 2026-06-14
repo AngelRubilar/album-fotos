@@ -17,7 +17,8 @@
     "fix-db-dimensions": "tsx scripts/fix-db-dimensions.ts",
     "generate-icons": "node scripts/generate-icons.mjs",
     "test": "vitest run",
-    "migrate-folders": "tsx scripts/migrate-to-album-folders.ts"
+    "migrate-folders": "tsx scripts/migrate-to-album-folders.ts",
+    "generate-display": "tsx scripts/generate-display-variants.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
