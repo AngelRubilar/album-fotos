@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { mkdir, writeFile, readdir } from 'fs/promises';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
-import { generateThumbnailForUpload } from '@/lib/thumbnail';
+import { generateThumbnailFromBuffer } from '@/lib/thumbnail';
 import sharp from 'sharp';
+import convert from 'heic-convert';
 import {
   slugify,
   uniqueSlug,
@@ -38,6 +39,15 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/heif',
   'image/tiff',
 ]);
+
+// HEIC/HEIF (formato por defecto del iPhone) no lo decodifica sharp.
+// Se detecta por mime o extensión para convertirlo antes de generar derivados.
+function isHeic(file: File): boolean {
+  const t = (file.type || '').toLowerCase();
+  if (t === 'image/heic' || t === 'image/heif') return true;
+  const ext = path.extname(file.name).toLowerCase();
+  return ext === '.heic' || ext === '.heif';
+}
 
 // POST /api/upload - Subir imágenes
 export async function POST(request: NextRequest) {
@@ -161,12 +171,25 @@ export async function POST(request: NextRequest) {
       // GUARDAR ORIGINAL BYTE-A-BYTE (sin re-encode → calidad y metadatos intactos)
       await writeFile(filePath, buffer);
 
-      // Miniatura WebP aparte (rotate hornea la orientación EXIF en el derivado)
-      // generateThumbnailForUpload escribe destName con extensión .webp en thumbsDir
+      // Buffer procesable por sharp para los DERIVADOS (miniatura/dimensiones/blur).
+      // HEIC (iPhone) no lo decodifica sharp → se convierte a JPEG en memoria.
+      // El original guardado en disco sigue siendo el .heic intacto.
+      let processBuffer = buffer;
+      if (isHeic(file)) {
+        try {
+          processBuffer = Buffer.from(
+            await convert({ buffer, format: 'JPEG', quality: 0.92 })
+          );
+        } catch (e) {
+          console.warn(`No se pudo convertir HEIC ${destName}:`, e);
+        }
+      }
+
+      // Miniatura WebP generada desde el buffer procesable (rotate hornea EXIF)
       const thumbFilename = destName.replace(/\.[^.]+$/, '.webp');
       let thumbUrlValue = thumbUrl(year, folderName, thumbFilename);
       try {
-        await generateThumbnailForUpload(destName, uploadsDir, thumbsDir);
+        await generateThumbnailFromBuffer(processBuffer, path.join(thumbsDir, thumbFilename));
       } catch {
         console.warn(`No se pudo generar thumbnail para ${destName}`);
         thumbUrlValue = uploadUrl(year, folderName, destName); // fallback: usa el original
@@ -177,14 +200,14 @@ export async function POST(request: NextRequest) {
       let realHeight = 600;
       let blurDataUrl: string | null = null;
       try {
-        const meta = await sharp(buffer).rotate().metadata();
+        const meta = await sharp(processBuffer).rotate().metadata();
         realWidth = meta.width || 800;
         realHeight = meta.height || 600;
       } catch {
-        /* HEIC no decodificable u otro: usar defaults */
+        /* formato no decodificable: usar defaults */
       }
       try {
-        const blurBuffer = await sharp(buffer)
+        const blurBuffer = await sharp(processBuffer)
           .rotate()
           .resize(20, 20, { fit: 'inside' })
           .jpeg({ quality: 40 })
