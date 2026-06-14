@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { mkdir, writeFile, readdir } from 'fs/promises';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
-import { generateThumbnailFromBuffer } from '@/lib/thumbnail';
+import { generateThumbnailFromBuffer, generateDisplayFromBuffer } from '@/lib/thumbnail';
 import sharp from 'sharp';
 import convert from 'heic-convert';
 import {
@@ -14,6 +14,7 @@ import {
   albumThumbDir,
   uploadUrl,
   thumbUrl,
+  displayName,
 } from '@/lib/storage';
 
 // Configuración para permitir archivos grandes (500MB máximo)
@@ -195,6 +196,15 @@ export async function POST(request: NextRequest) {
         thumbUrlValue = uploadUrl(year, folderName, destName); // fallback: usa el original
       }
 
+      // Versión "display" (2048px WebP) para el visor
+      let displayUrlValue: string | null = thumbUrl(year, folderName, displayName(destName));
+      try {
+        await generateDisplayFromBuffer(processBuffer, path.join(thumbsDir, displayName(destName)));
+      } catch {
+        console.warn(`No se pudo generar display para ${destName}`);
+        displayUrlValue = null;
+      }
+
       // Dimensiones reales POST-rotación (para el masonry)
       let realWidth = 800;
       let realHeight = 600;
@@ -225,6 +235,7 @@ export async function POST(request: NextRequest) {
           originalName: file.name,
           fileUrl: uploadUrl(year, folderName, destName),
           thumbnailUrl: thumbUrlValue,
+          displayUrl: displayUrlValue,
           fileSize: file.size,
           width: realWidth,
           height: realHeight,
