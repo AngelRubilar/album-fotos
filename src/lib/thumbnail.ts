@@ -49,6 +49,31 @@ export async function generateThumbnail(
 }
 
 /**
+ * Genera un thumbnail WebP desde un buffer en memoria.
+ * Útil cuando el original no es legible por sharp (ej. HEIC ya convertido a JPEG).
+ * @param buffer Buffer de una imagen que sharp pueda decodificar (jpeg/png/webp/…)
+ * @param outputPath Ruta completa donde se guardará el thumbnail .webp
+ */
+export async function generateThumbnailFromBuffer(
+  buffer: Buffer,
+  outputPath: string
+): Promise<void> {
+  const outputDir = path.dirname(outputPath);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  await sharp(buffer)
+    .rotate()
+    .resize(THUMBNAIL_CONFIG.width, null, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .webp({ quality: THUMBNAIL_CONFIG.quality })
+    .toFile(outputPath);
+}
+
+/**
  * Genera un thumbnail para un archivo subido
  * @param filename Nombre del archivo (ej: "1234_abcd.jpg")
  * @param uploadsDir Directorio de uploads

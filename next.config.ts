@@ -4,6 +4,18 @@ const nextConfig: NextConfig = {
   // Configuración para Docker (standalone output)
   output: 'standalone',
 
+  // Garantiza que el decodificador HEIC (heic-convert/libheif-js) se incluya
+  // en el output standalone usado por la imagen Docker.
+  outputFileTracingIncludes: {
+    '/api/upload': [
+      './node_modules/heic-convert/**',
+      './node_modules/heic-decode/**',
+      './node_modules/libheif-js/**',
+      './node_modules/jpeg-js/**',
+      './node_modules/pngjs/**',
+    ],
+  },
+
   images: {
     // Formatos de imagen optimizados (AVIF primero, WebP como fallback)
     formats: ['image/avif', 'image/webp'],
