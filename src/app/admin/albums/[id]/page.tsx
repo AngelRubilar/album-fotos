@@ -106,7 +106,7 @@ function FocalPointModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
+      <div className="bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90dvh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
           <h2 className="text-white font-semibold text-base">{title}</h2>
           <button onClick={onCancel} className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors">

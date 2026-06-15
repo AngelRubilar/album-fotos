@@ -45,6 +45,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#2f6b6b',
+  // El zoom con dos dedos queda deshabilitado en la UI; el visor de fotos
+  // tiene su propio zoom (pinch/doble-tap/rueda), así que ahí sí se puede.
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
