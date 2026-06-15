@@ -324,7 +324,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
                   {album.description && <p className={`text-sm ${t.textMuted} mb-2`}>{album.description}</p>}
                   <div className="flex items-center justify-between">
                     <span className={`text-sm ${t.textMuted}`}>{album.imageCount} fotos</span>
-                    <Link href={`/upload?album=${album.id}`} onClick={e => e.stopPropagation()} className={`text-sm ${t.accent}`}>Subir</Link>
+                    <Link href={`/admin/upload?album=${album.id}`} onClick={e => e.stopPropagation()} className={`text-sm ${t.accent}`}>Subir</Link>
                   </div>
                 </div>
               </StaggerItem>
@@ -443,7 +443,7 @@ function AlbumPageContent({ params }: { params: Promise<{ year: string }> }) {
             </div>
             <h3 className={`text-xl font-semibold ${t.text} mb-2`}>Álbum vacío</h3>
             <p className={`${t.textMuted} mb-6 max-w-sm mx-auto`}>Sube fotos para llenar este álbum.</p>
-            <Link href={`/upload?album=${selectedAlbum}`}>
+            <Link href={`/admin/upload?album=${selectedAlbum}`}>
               <button className="px-6 py-3 rounded-xl text-white font-medium btn-glass-accent">Subir Fotos</button>
             </Link>
           </div>
