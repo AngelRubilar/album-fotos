@@ -48,6 +48,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // El service worker debe revalidarse siempre, para que las
+        // actualizaciones (nuevas versiones del SW) lleguen a los dispositivos
+        // sin quedar pegados en una versión vieja cacheada.
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+      {
         source: '/uploads/:path*',
         headers: [
           {
