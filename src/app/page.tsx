@@ -80,7 +80,7 @@ export default function Home() {
             </div>
             <h3 className={`font-display text-2xl font-medium ${t.text} mb-2`}>Sin fotos todavía</h3>
             <p className={`${t.textMuted} mb-6 max-w-sm mx-auto`}>Sube tus primeras fotos para comenzar a crear tu galería.</p>
-            <Link href="/upload">
+            <Link href="/admin/upload">
               <button className="btn-glass-accent px-6 py-3 rounded-xl text-white font-medium">Subir Fotos</button>
             </Link>
           </div>
