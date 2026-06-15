@@ -41,6 +41,10 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/tiff',
 ]);
 
+// Extensiones de imagen aceptadas. Android suele subir fotos con `type` vacío,
+// así que validamos también por extensión cuando el MIME no es confiable.
+const ALLOWED_EXT = /\.(jpe?g|png|gif|webp|avif|heic|heif|tiff?)$/i;
+
 // HEIC/HEIF (formato por defecto del iPhone) no lo decodifica sharp.
 // Se detecta por mime o extensión para convertirlo antes de generar derivados.
 function isHeic(file: File): boolean {
@@ -149,8 +153,10 @@ export async function POST(request: NextRequest) {
     const skippedFiles: { name: string; reason: string }[] = [];
 
     for (const file of files) {
-      // Validar tipo: debe ser una imagen de un formato soportado
-      if (!file.type.startsWith('image/') || !ALLOWED_MIME_TYPES.has(file.type)) {
+      // Validar tipo: por MIME (si viene) o por extensión (Android suele no mandar MIME)
+      const mimeOk = file.type.startsWith('image/') && ALLOWED_MIME_TYPES.has(file.type);
+      const extOk = ALLOWED_EXT.test(file.name);
+      if (!mimeOk && !extOk) {
         skippedFiles.push({ name: file.name, reason: `Tipo no soportado (${file.type || 'desconocido'})` });
         continue;
       }
