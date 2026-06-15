@@ -7,6 +7,13 @@ import { useToast } from "@/components/Toast";
 import { FadeUp } from "@/components/MotionWrap";
 import type { AlbumSummary } from "@/types";
 
+const IMAGE_EXT = /\.(jpe?g|png|gif|webp|avif|heic|heif|tiff?|bmp)$/i;
+// En Android las fotos de la galería suelen llegar con `type` vacío (sobre todo
+// HEIC), así que aceptamos también por extensión, no solo por MIME.
+function isImageFile(f: File): boolean {
+  return f.type.startsWith("image/") || IMAGE_EXT.test(f.name);
+}
+
 function UploadContent() {
   const { t } = useTheme();
   const { addToast } = useToast();
@@ -42,14 +49,14 @@ function UploadContent() {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files?.[0]) {
-      const imageFiles = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+      const imageFiles = Array.from(e.dataTransfer.files).filter(isImageFile);
       setSelectedFiles((prev) => [...prev, ...imageFiles]);
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const imageFiles = Array.from(e.target.files).filter((f) => f.type.startsWith("image/"));
+      const imageFiles = Array.from(e.target.files).filter(isImageFile);
       setSelectedFiles((prev) => [...prev, ...imageFiles]);
     }
   };
@@ -137,7 +144,7 @@ function UploadContent() {
               >
                 Seleccionar Archivos
               </label>
-              <p className={`text-xs ${t.textMuted} mt-4`}>JPG, PNG, GIF, WebP (max 10MB)</p>
+              <p className={`text-xs ${t.textMuted} mt-4`}>JPG, PNG, HEIC, WebP, GIF (máx 100MB)</p>
             </div>
           </div>
 
